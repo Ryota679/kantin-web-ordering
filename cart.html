@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keranjang - Kantin Order</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>Keranjang Belanja</h2>
+            <p>Review pesanan Anda sebelum checkout</p>
+        </div>
+
+        <div id="cartItems"></div>
+
+        <div id="emptyCart" class="empty-state" style="display: none;">
+            <h3>Keranjang Kosong</h3>
+            <p>Anda belum menambahkan menu apapun.</p>
+            <button class="btn btn-primary" onclick="backToMenu()">Lihat Menu</button>
+        </div>
+
+        <div id="cartSummary" class="card" style="display: none;">
+            <h3>Ringkasan</h3>
+            <div
+                style="display: flex; justify-content: space-between; margin-top: 16px; font-size: 1.2rem; font-weight: 600;">
+                <span>Total:</span>
+                <span id="totalPrice" style="color: var(--primary-color);"></span>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="proceedToCheckout()">
+                Lanjut ke Checkout
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const tenantCode = getCurrentTenant();
+
+        if (!tenantCode) {
+            window.location.href = 'index.html';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCart();
+        });
+
+        function renderCart() {
+            const cart = Cart.get(tenantCode);
+            const cartItemsDiv = document.getElementById('cartItems');
+            const emptyDiv = document.getElementById('emptyCart');
+            const summaryDiv = document.getElementById('cartSummary');
+
+            if (cart.length === 0) {
+                cartItemsDiv.innerHTML = '';
+                emptyDiv.style.display = 'block';
+                summaryDiv.style.display = 'none';
+                return;
+            }
+
+            emptyDiv.style.display = 'none';
+            summaryDiv.style.display = 'block';
+
+            cartItemsDiv.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <img 
+                        src="${item.image_url || 'https://via.placeholder.com/80?text=No+Image'}" 
+                        alt="${item.product_name}"
+                        class="cart-item-image"
+                        onerror="this.src='https://via.placeholder.com/80?text=No+Image'"
+                    >
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.product_name}</div>
+                        <div class="cart-item-price">${formatRupiah(item.price)}</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn" onclick="updateQuantity('${item.product_id}', ${item.quantity - 1})">-</button>
+                            <span style="min-width: 30px; text-align: center; font-weight: 600;">${item.quantity}</span>
+                            <button class="quantity-btn" onclick="updateQuantity('${item.product_id}', ${item.quantity + 1})">+</button>
+                            <button class="btn btn-danger btn-small" onclick="removeItem('${item.product_id}')" style="margin-left: auto;">Hapus</button>
+                        </div>
+                    </div>
+                    <div style="font-weight: 600; color: var(--primary-color);">
+                        ${formatRupiah(item.price * item.quantity)}
+                    </div>
+                </div>
+            `).join('');
+
+            const total = Cart.getTotal(tenantCode);
+            document.getElementById('totalPrice').textContent = formatRupiah(total);
+        }
+
+        function updateQuantity(productId, newQuantity) {
+            Cart.updateQuantity(tenantCode, productId, newQuantity);
+            renderCart();
+        }
+
+        function removeItem(productId) {
+            if (confirm('Hapus item ini dari keranjang?')) {
+                Cart.remove(tenantCode, productId);
+                renderCart();
+            }
+        }
+
+        function backToMenu() {
+            window.location.href = `menu.html?tenant=${tenantCode}`;
+        }
+
+        function proceedToCheckout() {
+            window.location.href = `checkout.html?tenant=${tenantCode}`;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kantin Order - Pesan Online</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="landing-header">
+            <h1>🍴 Kantin Order</h1>
+            <p class="subtitle">Pesan makanan favorit Anda dengan mudah</p>
+        </div>
+
+        <div class="card">
+            <h2>Mulai Order</h2>
+            <p>Masukkan kode tenant atau scan QR code</p>
+            
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="tenantCode" 
+                    placeholder="Contoh: Q8L2PH"
+                    class="input-field"
+                    autocomplete="off"
+                >
+                <button onclick="goToMenu()" class="btn btn-primary">
+                    Lihat Menu
+                </button>
+            </div>
+
+            <div id="error" class="error-message" style="display: none;"></div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-card">
+                <span class="icon">📱</span>
+                <h3>Mudah</h3>
+                <p>Scan QR code atau masukkan kode</p>
+            </div>
+            <div class="info-card">
+                <span class="icon">🍽️</span>
+                <h3>Cepat</h3>
+                <p>Pesan langsung dari meja Anda</p>
+            </div>
+            <div class="info-card">
+                <span class="icon">✅</span>
+                <h3>Praktis</h3>
+                <p>Track pesanan real-time</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Get tenant code from URL if scanning QR
+        const urlParams = new URLSearchParams(window.location.search);
+        const tenantFromUrl = urlParams.get('t') || urlParams.get('tenant');
+        
+        if (tenantFromUrl) {
+            document.getElementById('tenantCode').value = tenantFromUrl;
+            // Auto-redirect after 1 second
+            setTimeout(() => goToMenu(), 1000);
+        }
+
+        async function goToMenu() {
+            const code = document.getElementById('tenantCode').value.trim().toUpperCase();
+            const errorDiv = document.getElementById('error');
+            
+            if (!code) {
+                showError('Masukkan kode tenant terlebih dahulu');
+                return;
+            }
+
+            // Show loading
+            const btn = event.target;
+            btn.textContent = 'Memuat...';
+            btn.disabled = true;
+
+            try {
+                // Validate tenant exists
+                const isValid = await validateTenant(code);
+                
+                if (isValid) {
+                    window.location.href = `menu.html?tenant=${code}`;
+                } else {
+                    showError('Kode tenant tidak valid. Periksa kembali kode Anda.');
+                    btn.textContent = 'Lihat Menu';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Terjadi kesalahan. Periksa koneksi internet Anda.');
+                btn.textContent = 'Lihat Menu';
+                btn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

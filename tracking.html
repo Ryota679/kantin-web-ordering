@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lacak Pesanan - Kantin Order</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .status-timeline {
+            margin: 30px 0;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .status-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: var(--bg-light);
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .status-icon.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .status-icon.completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-content {
+            margin-left: 20px;
+        }
+
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .status-time {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .status-line {
+            position: absolute;
+            left: 23px;
+            top: 48px;
+            bottom: -24px;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .status-item:last-child .status-line {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>Lacak Pesanan</h2>
+            <p>Masukkan nomor invoice untuk melacak pesanan Anda</p>
+
+            <div class="input-group">
+                <input type="text" id="invoiceInput" placeholder="Contoh: INV-20251221-ABC1234" class="input-field">
+                <button onclick="trackOrder()" class="btn btn-primary">Lacak</button>
+            </div>
+
+            <div id="error" class="error-message" style="display: none; margin-top: 16px;"></div>
+        </div>
+
+        <div id="orderDetails" style="display: none;">
+            <div class="card">
+                <h3>Detail Pesanan</h3>
+                <div id="orderInfo"></div>
+            </div>
+
+            <div class="card">
+                <h3>Status Pesanan</h3>
+                <div id="orderStatus" class="status-timeline"></div>
+            </div>
+
+            <div class="card">
+                <h3>Item Pesanan</h3>
+                <div id="orderItems"></div>
+            </div>
+        </div>
+
+        <div id="notFound" class="empty-state" style="display: none;">
+            <h3>Pesanan Tidak Ditemukan</h3>
+            <p>Invoice tidak ditemukan. Periksa kembali nomor invoice Anda.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Auto-fill from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const invoiceFromUrl = urlParams.get('invoice');
+
+        if (invoiceFromUrl) {
+            document.getElementById('invoiceInput').value = invoiceFromUrl;
+            trackOrder();
+        }
+
+        async function trackOrder() {
+            const invoice = document.getElementById('invoiceInput').value.trim().toUpperCase();
+            const errorDiv = document.getElementById('error');
+            const detailsDiv = document.getElementById('orderDetails');
+            const notFoundDiv = document.getElementById('notFound');
+
+            if (!invoice) {
+                errorDiv.textContent = 'Masukkan nomor invoice';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+            detailsDiv.style.display = 'none';
+            notFoundDiv.style.display = 'none';
+
+            event.target.textContent = 'Mencari...';
+            event.target.disabled = true;
+
+            try {
+                const order = await getOrderByInvoice(invoice);
+
+                if (!order) {
+                    notFoundDiv.style.display = 'block';
+                    event.target.textContent = 'Lacak';
+                    event.target.disabled = false;
+                    return;
+                }
+
+                displayOrder(order);
+                detailsDiv.style.display = 'block';
+                event.target.textContent = 'Lacak';
+                event.target.disabled = false;
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+                errorDiv.style.display = 'block';
+                event.target.textContent = 'Lacak';
+                event.target.disabled = false;
+            }
+        }
+
+        function displayOrder(order) {
+            // Order info
+            document.getElementById('orderInfo').innerHTML = `
+                <div style="display: grid; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Invoice:</span>
+                        <span style="font-weight: 600;">${order.invoice_number}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Nama:</span>
+                        <span style="font-weight: 600;">${order.customer_name}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">No. Meja:</span>
+                        <span style="font-weight: 600;">${order.table_number}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Total:</span>
+                        <span style="font-weight: 600; color: var(--primary-color);">${formatRupiah(order.total_price)}</span>
+                    </div>
+                </div>
+            `;
+
+            // Status timeline
+            const statuses = {
+                pending: { icon: '⏳', label: 'Menunggu Konfirmasi', completed: ['paid', 'preparing', 'ready', 'completed'] },
+                paid: { icon: '💵', label: 'Pembayaran Dikonfirmasi', completed: ['preparing', 'ready', 'completed'] },
+                preparing: { icon: '👨‍🍳', label: 'Sedang Disiapkan', completed: ['ready', 'completed'] },
+                ready: { icon: '✅', label: 'Siap Disajikan', completed: ['completed'] },
+                completed: { icon: '🎉', label: 'Selesai', completed: [] }
+            };
+
+            const currentStatus = order.order_status;
+            let statusHtml = '';
+
+            for (const [key, value] of Object.entries(statuses)) {
+                const isActive = key === currentStatus;
+                const isCompleted = value.completed.includes(currentStatus);
+                const statusClass = isCompleted ? 'completed' : (isActive ? 'active' : '');
+
+                statusHtml += `
+                    <div class="status-item">
+                        <div class="status-icon ${statusClass}">${value.icon}</div>
+                        <div class="status-content">
+                            <div class="status-title">${value.label}</div>
+                        </div>
+                        <div class="status-line"></div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('orderStatus').innerHTML = statusHtml;
+
+            // Order items
+            const items = JSON.parse(order.items || '[]');
+            document.getElementById('orderItems').innerHTML = items.map(item => `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-weight: 500;">${item.product_name}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">${item.quantity}x ${formatRupiah(item.price)}</div>
+                    </div>
+                    <div style="font-weight: 600;">${formatRupiah(item.price * item.quantity)}</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+
+</html>

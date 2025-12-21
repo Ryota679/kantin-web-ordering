@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - Kantin Order</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h2 id="tenantName">Menu</h2>
+            <p>Pilih menu yang Anda inginkan</p>
+        </div>
+
+        <!-- Category Filter -->
+        <div id="categoryFilter" class="category-filter" style="display: none;">
+            <button class="category-tag active" data-category="all" onclick="filterByCategory('all')">
+                Semua
+            </button>
+        </div>
+
+        <div id="loading" class="loading">
+            Memuat menu
+        </div>
+
+        <div id="products" class="products-grid" style="display: none;"></div>
+
+        <div id="empty" class="empty-state" style="display: none;">
+            <h3>Tidak ada menu tersedia</h3>
+            <p>Maaf, saat ini belum ada menu yang bisa dipesan.</p>
+        </div>
+    </div>
+
+    <!-- Floating Cart Button -->
+    <div id="cartBadge" class="cart-badge" onclick="goToCart()" style="display: none;">
+        🛒 Keranjang (<span id="cartCount">0</span>)
+    </div>
+
+    <!-- Product Detail Modal -->
+    <div id="productModal" class="modal-overlay" style="display: none;" onclick="closeModalOnOverlay(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Detail Menu</div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" class="modal-image" src="" alt="">
+                <h2 id="modalName" class="modal-product-name"></h2>
+                <p id="modalDescription" class="modal-product-description"></p>
+                <div id="modalPrice" class="modal-product-price"></div>
+                <div id="modalStock" class="modal-product-stock"></div>
+
+                <div class="quantity-selector">
+                    <label>Jumlah:</label>
+                    <div class="quantity-controls">
+                        <button class="quantity-btn" onclick="changeQuantity(-1)">−</button>
+                        <span id="modalQuantity" class="quantity-display">1</span>
+                        <button class="quantity-btn" onclick="changeQuantity(1)">+</button>
+                    </div>
+                </div>
+
+                <button id="addToCartBtn" class="btn btn-primary" style="width: 100%;" onclick="addToCartFromModal()">
+                    Tambah ke Keranjang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const tenantCode = getCurrentTenant();
+        let currentProducts = [];
+        let selectedProduct = null;
+        let modalQuantity = 1;
+
+        if (!tenantCode) {
+            window.location.href = 'index.html';
+        }
+
+        // Load products on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadProducts();
+            updateCartBadge();
+        });
+
+        async function loadProducts() {
+            const loading = document.getElementById('loading');
+            const productsDiv = document.getElementById('products');
+            const emptyDiv = document.getElementById('empty');
+            const categoryFilter = document.getElementById('categoryFilter');
+
+            try {
+                currentProducts = await getProductsByTenant(tenantCode);
+
+                loading.style.display = 'none';
+
+                if (currentProducts.length === 0) {
+                    emptyDiv.style.display = 'block';
+                    return;
+                }
+
+                // Load categories
+                await loadCategories();
+                categoryFilter.style.display = 'flex';
+
+                // Display all products initially
+                renderProducts(currentProducts);
+
+            } catch (error) {
+                console.error('Error loading products:', error);
+                loading.innerHTML = '<p class="error-message">Gagal memuat menu. <a href="#" onclick="location.reload()" style="color: var(--primary-color);">Coba lagi</a></p>';
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                // Get unique categories from products
+                const categoryIds = [...new Set(currentProducts.map(p => p.category_id))].filter(Boolean);
+
+                if (categoryIds.length === 0) return;
+
+                // Fetch category names from database
+                const categories = await databases.listDocuments(
+                    APPWRITE_CONFIG.databaseId,
+                    'categories',
+                    [
+                        Appwrite.Query.equal('$id', categoryIds)
+                    ]
+                );
+
+                const categoryFilter = document.getElementById('categoryFilter');
+
+                // Add category buttons
+                categories.documents.forEach(category => {
+                    const button = document.createElement('button');
+                    button.className = 'category-tag';
+                    button.setAttribute('data-category', category.$id);
+                    button.textContent = category.name;
+                    button.onclick = () => filterByCategory(category.$id);
+                    categoryFilter.appendChild(button);
+                });
+
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        function filterByCategory(categoryId) {
+            // Update active state
+            document.querySelectorAll('.category-tag').forEach(tag => {
+                tag.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Filter products
+            if (categoryId === 'all') {
+                renderProducts(currentProducts);
+            } else {
+                const filtered = currentProducts.filter(p => p.category_id === categoryId);
+                renderProducts(filtered);
+            }
+        }
+
+        function renderProducts(products) {
+            const productsDiv = document.getElementById('products');
+            const emptyDiv = document.getElementById('empty');
+
+            if (products.length === 0) {
+                productsDiv.style.display = 'none';
+                emptyDiv.style.display = 'block';
+                emptyDiv.innerHTML = '<h3>Tidak ada menu di kategori ini</h3><p>Coba pilih kategori lain.</p>';
+                return;
+            }
+
+            emptyDiv.style.display = 'none';
+            productsDiv.style.display = 'grid';
+            productsDiv.innerHTML = products.map(product => {
+                const description = product.description || 'Menu lezat tersedia untuk Anda';
+                return `
+                    <div class="product-card" onclick="openProductModal('${product.$id}')">
+                        <img 
+                            src="${product.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" 
+                            alt="${product.name}"
+                            class="product-image"
+                            onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"
+                        >
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-description">${description}</div>
+                            <div class="product-price">${formatRupiah(product.price)}</div>
+                            <div class="product-stock">Stok: ${product.stock}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openProductModal(productId) {
+            selectedProduct = currentProducts.find(p => p.$id === productId);
+            if (!selectedProduct) return;
+
+            modalQuantity = 1;
+
+            const modal = document.getElementById('productModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalName = document.getElementById('modalName');
+            const modalDescription = document.getElementById('modalDescription');
+            const modalPrice = document.getElementById('modalPrice');
+            const modalStock = document.getElementById('modalStock');
+            const modalQuantityDisplay = document.getElementById('modalQuantity');
+            const addBtn = document.getElementById('addToCartBtn');
+
+            modalImage.src = selectedProduct.image_url || 'https://via.placeholder.com/600x300?text=No+Image';
+            modalImage.alt = selectedProduct.name;
+            modalName.textContent = selectedProduct.name;
+            modalDescription.textContent = selectedProduct.description || 'Menu lezat tersedia untuk Anda. Pesan sekarang dan nikmati kelezatannya!';
+            modalPrice.textContent = formatRupiah(selectedProduct.price);
+            modalStock.textContent = `Stok tersedia: ${selectedProduct.stock}`;
+            modalQuantityDisplay.textContent = modalQuantity;
+
+            if (selectedProduct.stock <= 0) {
+                addBtn.disabled = true;
+                addBtn.textContent = 'Stok Habis';
+            } else {
+                addBtn.disabled = false;
+                addBtn.textContent = 'Tambah ke Keranjang';
+            }
+
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('productModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            selectedProduct = null;
+            modalQuantity = 1;
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target.id === 'productModal') {
+                closeModal();
+            }
+        }
+
+        function changeQuantity(delta) {
+            if (!selectedProduct) return;
+
+            modalQuantity += delta;
+
+            if (modalQuantity < 1) modalQuantity = 1;
+            if (modalQuantity > selectedProduct.stock) modalQuantity = selectedProduct.stock;
+
+            document.getElementById('modalQuantity').textContent = modalQuantity;
+        }
+
+        async function addToCartFromModal() {
+            if (!selectedProduct) return;
+
+            try {
+                for (let i = 0; i < modalQuantity; i++) {
+                    Cart.add(tenantCode, selectedProduct);
+                }
+
+                updateCartBadge();
+
+                // Show feedback
+                const btn = document.getElementById('addToCartBtn');
+                btn.textContent = '✓ Ditambahkan!';
+                btn.style.background = 'var(--primary-hover)';
+
+                setTimeout(() => {
+                    closeModal();
+                    btn.textContent = 'Tambah ke Keranjang';
+                    btn.style.background = '';
+                }, 800);
+
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                alert('Gagal menambahkan ke keranjang');
+            }
+        }
+
+        function updateCartBadge() {
+            const count = Cart.getCount(tenantCode);
+            const badge = document.getElementById('cartBadge');
+            const countSpan = document.getElementById('cartCount');
+
+            if (count > 0) {
+                badge.style.display = 'block';
+                countSpan.textContent = count;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function goToCart() {
+            window.location.href = `cart.html?tenant=${tenantCode}`;
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

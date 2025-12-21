@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Kantin Order</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>Checkout</h2>
+            <p>Lengkapi data untuk menyelesaikan pesanan</p>
+        </div>
+
+        <div class="card">
+            <h3>Informasi Customer</h3>
+            <form id="checkoutForm" onsubmit="submitOrder(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Nama</label>
+                    <input type="text" id="customerName" class="input-field" required placeholder="Nama Anda">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">No. Handphone</label>
+                    <input type="tel" id="customerPhone" class="input-field" required placeholder="08123456789">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Nomor Meja</label>
+                    <input type="text" id="tableNumber" class="input-field" required placeholder="Nomor meja Anda">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Catatan (opsional)</label>
+                    <textarea id="customerNotes" class="input-field" rows="3"
+                        placeholder="Contoh: Pedas sedang, tanpa cabe"></textarea>
+                </div>
+
+                <div id="error" class="error-message" style="display: none;"></div>
+                <div id="success" class="success-message" style="display: none;"></div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="submitBtn">
+                    Buat Pesanan
+                </button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Ringkasan Pesanan</h3>
+            <div id="orderSummary"></div>
+            <div
+                style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--border-color); font-size: 1.2rem; font-weight: 600;">
+                <span>Total:</span>
+                <span id="totalPrice" style="color: var(--primary-color);"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/invoice-service.js"></script>
+    <script>
+        const tenantCode = getCurrentTenant();
+
+        if (!tenantCode) {
+            window.location.href = 'index.html';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const cart = Cart.get(tenantCode);
+            if (cart.length === 0) {
+                window.location.href = `menu.html?tenant=${tenantCode}`;
+                return;
+            }
+
+            renderOrderSummary();
+        });
+
+        function renderOrderSummary() {
+            const cart = Cart.get(tenantCode);
+            const summaryDiv = document.getElementById('orderSummary');
+
+            summaryDiv.innerHTML = cart.map(item => `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-weight: 500;">${item.product_name}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">${item.quantity}x ${formatRupiah(item.price)}</div>
+                    </div>
+                    <div style="font-weight: 600;">${formatRupiah(item.price * item.quantity)}</div>
+                </div>
+            `).join('');
+
+            const total = Cart.getTotal(tenantCode);
+            document.getElementById('totalPrice').textContent = formatRupiah(total);
+        }
+
+        async function submitOrder(event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const errorDiv = document.getElementById('error');
+            const successDiv = document.getElementById('success');
+
+            // Hide messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Get form data
+            const customerName = document.getElementById('customerName').value.trim();
+            const customerPhone = document.getElementById('customerPhone').value.trim();
+            const tableNumber = document.getElementById('tableNumber').value.trim();
+            const customerNotes = document.getElementById('customerNotes').value.trim();
+
+            // Get cart
+            const cart = Cart.get(tenantCode);
+            const total = Cart.getTotal(tenantCode);
+
+            // Show loading
+            submitBtn.textContent = 'Membuat pesanan...';
+            submitBtn.disabled = true;
+
+            try {
+                // Generate unique invoice
+                const invoice = await generateUniqueInvoice(databases);
+
+                // Prepare order data
+                const orderData = {
+                    invoice_number: invoice,
+                    tenant_code: tenantCode,
+                    customer_name: customerName,
+                    customer_phone: customerPhone,
+                    table_number: tableNumber,
+                    customer_notes: customerNotes || null,
+                    items: JSON.stringify(cart),
+                    total_price: total,
+                    order_status: 'pending'
+                };
+
+                // Create order
+                await createOrder(orderData);
+
+                // Clear cart
+                Cart.clear(tenantCode);
+
+                // Show success
+                successDiv.textContent = `Pesanan berhasil! Invoice: ${invoice}`;
+                successDiv.style.display = 'block';
+
+                // Redirect to tracking
+                setTimeout(() => {
+                    window.location.href = `tracking.html?invoice=${invoice}`;
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = error.userMessage || 'Gagal membuat pesanan. Silakan coba lagi.';
+                errorDiv.style.display = 'block';
+                submitBtn.textContent = 'Buat Pesanan';
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>
