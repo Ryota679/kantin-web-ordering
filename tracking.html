@@ -126,6 +126,7 @@
             const errorDiv = document.getElementById('error');
             const detailsDiv = document.getElementById('orderDetails');
             const notFoundDiv = document.getElementById('notFound');
+            const trackBtn = document.querySelector('button[onclick="trackOrder()"]');
 
             if (!invoice) {
                 errorDiv.textContent = 'Masukkan nomor invoice';
@@ -137,30 +138,38 @@
             detailsDiv.style.display = 'none';
             notFoundDiv.style.display = 'none';
 
-            event.target.textContent = 'Mencari...';
-            event.target.disabled = true;
+            if (trackBtn) {
+                trackBtn.textContent = 'Mencari...';
+                trackBtn.disabled = true;
+            }
 
             try {
                 const order = await getOrderByInvoice(invoice);
 
                 if (!order) {
                     notFoundDiv.style.display = 'block';
-                    event.target.textContent = 'Lacak';
-                    event.target.disabled = false;
+                    if (trackBtn) {
+                        trackBtn.textContent = 'Lacak';
+                        trackBtn.disabled = false;
+                    }
                     return;
                 }
 
                 displayOrder(order);
                 detailsDiv.style.display = 'block';
-                event.target.textContent = 'Lacak';
-                event.target.disabled = false;
+                if (trackBtn) {
+                    trackBtn.textContent = 'Lacak';
+                    trackBtn.disabled = false;
+                }
 
             } catch (error) {
                 console.error('Error:', error);
                 errorDiv.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
                 errorDiv.style.display = 'block';
-                event.target.textContent = 'Lacak';
-                event.target.disabled = false;
+                if (trackBtn) {
+                    trackBtn.textContent = 'Lacak';
+                    trackBtn.disabled = false;
+                }
             }
         }
 
