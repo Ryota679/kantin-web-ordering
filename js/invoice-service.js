@@ -52,11 +52,11 @@ async function generateUniqueInvoice(databases, maxRetries = 5) {
             const exists = await InvoiceService.checkInvoiceExists(databases, invoice);
 
             if (!exists) {
-                console.log(`✅ Invoice generated: ${invoice} (attempt ${attempt})`);
+                // console.log(`✅ Invoice generated: ${invoice} (attempt ${attempt})`);
                 return invoice;
             }
 
-            console.log(`⚠️ Invoice collision detected: ${invoice} (attempt ${attempt}/${maxRetries})`);
+            // console.log(`⚠️ Invoice collision detected: ${invoice} (attempt ${attempt}/${maxRetries})`);
 
         } catch (error) {
             console.error('Error generating invoice:', error);

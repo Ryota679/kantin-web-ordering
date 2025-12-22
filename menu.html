@@ -220,16 +220,29 @@
             modalName.textContent = selectedProduct.name;
             modalDescription.textContent = selectedProduct.description || 'Menu lezat tersedia untuk Anda. Pesan sekarang dan nikmati kelezatannya!';
             modalPrice.textContent = formatRupiah(selectedProduct.price);
-            modalStock.textContent = `Stok tersedia: ${selectedProduct.stock}`;
-            modalQuantityDisplay.textContent = modalQuantity;
 
-            if (selectedProduct.stock <= 0) {
+            // Stock handling: null = no tracking, 0 = out of stock
+            const stock = selectedProduct.stock;
+            if (stock === null || stock === undefined) {
+                // No stock tracking - always available
+                modalStock.style.display = 'none'; // Hide stock info
+                addBtn.disabled = false;
+                addBtn.textContent = 'Tambah ke Keranjang';
+            } else if (stock <= 0) {
+                // Out of stock
+                modalStock.style.display = 'block';
+                modalStock.textContent = 'Stok: Habis';
                 addBtn.disabled = true;
                 addBtn.textContent = 'Stok Habis';
             } else {
+                // Stock available with tracking
+                modalStock.style.display = 'block';
+                modalStock.textContent = `Stok: ${stock}`;
                 addBtn.disabled = false;
                 addBtn.textContent = 'Tambah ke Keranjang';
             }
+
+            modalQuantityDisplay.textContent = modalQuantity;
 
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
@@ -251,12 +264,27 @@
         function changeQuantity(delta) {
             if (!selectedProduct) return;
 
-            modalQuantity += delta;
+            const newQuantity = modalQuantity + delta;
+            const stock = selectedProduct.stock;
 
-            if (modalQuantity < 1) modalQuantity = 1;
-            if (modalQuantity > selectedProduct.stock) modalQuantity = selectedProduct.stock;
+            // Minimum is always 1
+            if (newQuantity < 1) {
+                modalQuantity = 1;
+            }
+            // If stock tracking enabled, enforce max
+            else if (stock !== null && stock !== undefined && newQuantity > stock) {
+                modalQuantity = stock;
+            }
+            // Otherwise allow any quantity (no stock tracking)
+            else {
+                modalQuantity = newQuantity;
+            }
 
-            document.getElementById('modalQuantity').textContent = modalQuantity;
+            // Force update the display
+            const display = document.getElementById('modalQuantity');
+            if (display) {
+                display.textContent = modalQuantity;
+            }
         }
 
         async function addToCartFromModal() {
