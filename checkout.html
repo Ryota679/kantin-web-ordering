@@ -124,12 +124,29 @@
             submitBtn.disabled = true;
 
             try {
+                // Get tenant ID from tenant code
+                const tenantResponse = await databases.listDocuments(
+                    APPWRITE_CONFIG.databaseId,
+                    APPWRITE_CONFIG.collections.tenants,
+                    [
+                        Appwrite.Query.equal('tenant_code', tenantCode),
+                        Appwrite.Query.limit(1)
+                    ]
+                );
+
+                if (tenantResponse.documents.length === 0) {
+                    throw new Error('Tenant tidak ditemukan');
+                }
+
+                const tenantId = tenantResponse.documents[0].$id;
+
                 // Generate unique invoice
                 const invoice = await generateUniqueInvoice(databases);
 
                 // Prepare order data
                 const orderData = {
                     invoice_number: invoice,
+                    tenant_id: tenantId,
                     tenant_code: tenantCode,
                     customer_name: customerName,
                     customer_phone: customerPhone,
@@ -157,7 +174,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                errorDiv.textContent = error.userMessage || 'Gagal membuat pesanan. Silakan coba lagi.';
+                errorDiv.textContent = error.message || 'Gagal membuat pesanan. Silakan coba lagi.';
                 errorDiv.style.display = 'block';
                 submitBtn.textContent = 'Buat Pesanan';
                 submitBtn.disabled = false;
