@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kantin Order - Pesan Online</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
     <div class="container">
         <div class="landing-header">
@@ -16,16 +18,10 @@
         <div class="card">
             <h2>Mulai Order</h2>
             <p>Masukkan kode tenant atau scan QR code</p>
-            
+
             <div class="input-group">
-                <input 
-                    type="text" 
-                    id="tenantCode" 
-                    placeholder="Contoh: Q8L2PH"
-                    value="E9J22Q"
-                    class="input-field"
-                    autocomplete="off"
-                >
+                <input type="text" id="tenantCode" placeholder="Contoh: Q8L2PH" value="E9J22Q" class="input-field"
+                    autocomplete="off">
                 <button onclick="goToMenu()" class="btn btn-primary">
                     Lihat Menu
                 </button>
@@ -55,10 +51,6 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-        <a href="menu.html?tenant=E9J22Q" class="nav-item">
-            <span class="nav-icon">🍽️</span>
-            <span class="nav-label">Produk</span>
-        </a>
         <a href="tracking.html" class="nav-item">
             <span class="nav-icon">📦</span>
             <span class="nav-label">Lacak Pesanan</span>
@@ -72,7 +64,7 @@
         // Get tenant code from URL if scanning QR
         const urlParams = new URLSearchParams(window.location.search);
         const tenantFromUrl = urlParams.get('t') || urlParams.get('tenant');
-        
+
         if (tenantFromUrl) {
             document.getElementById('tenantCode').value = tenantFromUrl;
             // Auto-redirect after 1 second
@@ -82,7 +74,7 @@
         async function goToMenu() {
             const code = document.getElementById('tenantCode').value.trim().toUpperCase();
             const errorDiv = document.getElementById('error');
-            
+
             if (!code) {
                 showError('Masukkan kode tenant terlebih dahulu');
                 return;
@@ -96,7 +88,7 @@
             try {
                 // Validate tenant exists
                 const isValid = await validateTenant(code);
-                
+
                 if (isValid) {
                     window.location.href = `menu.html?tenant=${code}`;
                 } else {
@@ -122,4 +114,5 @@
         }
     </script>
 </body>
+
 </html>
