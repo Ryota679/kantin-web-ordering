@@ -764,3 +764,69 @@ textarea.input-field {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--bg-hover);
 }
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 0;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 20px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: all 0.3s;
+    border-radius: 12px;
+    min-width: 80px;
+}
+
+.nav-item:hover {
+    color: var(--primary-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.nav-item.active {
+    color: var(--primary-color);
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+}
+
+.nav-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Add bottom padding to body to prevent content being hidden behind navbar */
+body {
+    padding-bottom: 80px;
+}
+
+@media (max-width: 768px) {
+    .nav-item {
+        min-width: 70px;
+        padding: 8px 12px;
+    }
+    
+    .nav-icon {
+        font-size: 1.3rem;
+    }
+    
+    .nav-label {
+        font-size: 0.7rem;
+    }
+}
