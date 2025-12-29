@@ -120,6 +120,127 @@
                         placeholder="Contoh: Pedas sedang, tanpa cabe"></textarea>
                 </div>
 
+                <!-- Payment Method Selection - MOVED HERE -->
+                <div style="margin-bottom: 24px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 1.1rem;">Metode Pembayaran</h4>
+                    <p style="color: #666; font-size: 0.9rem; margin: 0 0 16px 0;">Pilih metode pembayaran Anda</p>
+
+                    <div id="paymentMethodError"
+                        style="display: none; color: #dc3545; padding: 12px; background: #f8d7da; border-radius: 8px; margin-bottom: 16px;">
+                        Silakan pilih metode pembayaran
+                    </div>
+
+                    <!-- E-Wallet -->
+                    <div class="payment-category">
+                        <h4>E-Wallet</h4>
+                        <div class="payment-methods">
+                            <label class="payment-method">
+                                <input type="radio" name="paymentMethod" value="gopay" data-fee-type="percentage"
+                                    data-fee-value="0.02">
+                                <div class="method-card">
+                                    <div class="method-icon" style="background: #00AA13;">
+                                        <span style="color: white; font-weight: bold;">Go</span>
+                                    </div>
+                                    <div class="method-info">
+                                        <div class="method-name">GoPay</div>
+                                        <div class="method-fee">Biaya: 2%</div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="payment-method">
+                                <input type="radio" name="paymentMethod" value="qris" data-fee-type="percentage"
+                                    data-fee-value="0.007">
+                                <div class="method-card">
+                                    <div class="method-icon" style="background: #FF6B00;">
+                                        <span style="color: white; font-weight: bold;">QR</span>
+                                    </div>
+                                    <div class="method-info">
+                                        <div class="method-name">QRIS</div>
+                                        <div class="method-fee">Biaya: 0.7%</div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="payment-method">
+                                <input type="radio" name="paymentMethod" value="shopeepay" data-fee-type="percentage"
+                                    data-fee-value="0.02">
+                                <div class="method-card">
+                                    <div class="method-icon" style="background: #EE4D2D;">
+                                        <span style="color: white; font-weight: bold;">SP</span>
+                                    </div>
+                                    <div class="method-info">
+                                        <div class="method-name">ShopeePay</div>
+                                        <div class="method-fee">Biaya: 2%</div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Virtual Account -->
+                    <div class="payment-category">
+                        <h4>Transfer Bank (Virtual Account)</h4>
+                        <div class="payment-methods">
+                            <label class="payment-method">
+                                <input type="radio" name="paymentMethod" value="bca" data-fee-type="flat"
+                                    data-fee-value="4000">
+                                <div class="method-card">
+                                    <div class="method-icon" style="background: #003F87;">
+                                        <span style="color: white; font-weight: bold; font-size: 0.7rem;">BCA</span>
+                                    </div>
+                                    <div class="method-info">
+                                        <div class="method-name">BCA Virtual Account</div>
+                                        <div class="method-fee">Biaya: Rp 4.000</div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="payment-method">
+                                <input type="radio" name="paymentMethod" value="bni" data-fee-type="flat"
+                                    data-fee-value="4000">
+                                <div class="method-card">
+                                    <div class="method-icon" style="background: #EC6D23;">
+                                        <span style="color: white; font-weight: bold; font-size: 0.7rem;">BNI</span>
+                                    </div>
+                                    <div class="method-info">
+                                        <div class="method-name">BNI Virtual Account</div>
+                                        <div class="method-fee">Biaya: Rp 4.000</div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="payment-method">
+                                <input type="radio" name="paymentMethod" value="bri" data-fee-type="flat"
+                                    data-fee-value="4000">
+                                <div class="method-card">
+                                    <div class="method-icon" style="background: #003D79;">
+                                        <span style="color: white; font-weight: bold; font-size: 0.7rem;">BRI</span>
+                                    </div>
+                                    <div class="method-info">
+                                        <div class="method-name">BRI Virtual Account</div>
+                                        <div class="method-fee">Biaya: Rp 4.000</div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="payment-method">
+                                <input type="radio" name="paymentMethod" value="permata" data-fee-type="flat"
+                                    data-fee-value="4000">
+                                <div class="method-card">
+                                    <div class="method-icon" style="background: #7AB344;">
+                                        <span style="color: white; font-weight: bold; font-size: 0.6rem;">PRMT</span>
+                                    </div>
+                                    <div class="method-info">
+                                        <div class="method-name">Permata VA</div>
+                                        <div class="method-fee">Biaya: Rp 4.000</div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="error" class="error-message" style="display: none;"></div>
                 <div id="success" class="success-message" style="display: none;"></div>
 
@@ -127,123 +248,6 @@
                     Buat Pesanan
                 </button>
             </form>
-        </div>
-
-        <div class="card">
-            <h3>Metode Pembayaran</h3>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 16px;">Pilih metode pembayaran Anda</p>
-
-            <div id="paymentMethodError"
-                style="display: none; color: #dc3545; padding: 12px; background: #f8d7da; border-radius: 8px; margin-bottom: 16px;">
-                Silakan pilih metode pembayaran
-            </div>
-
-            <!-- E-Wallet -->
-            <div class="payment-category">
-                <h4>E-Wallet</h4>
-                <div class="payment-methods">
-                    <label class="payment-method">
-                        <input type="radio" name="paymentMethod" value="gopay" data-fee-type="percentage"
-                            data-fee-value="0.02">
-                        <div class="method-card">
-                            <div class="method-icon" style="background: #00AA13;">
-                                <span style="color: white; font-weight: bold;">Go</span>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">GoPay</div>
-                                <div class="method-fee">Biaya: 2%</div>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="payment-method">
-                        <input type="radio" name="paymentMethod" value="qris" data-fee-type="percentage"
-                            data-fee-value="0.007">
-                        <div class="method-card">
-                            <div class="method-icon" style="background: #FF6B00;">
-                                <span style="color: white; font-weight: bold;">QR</span>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">QRIS</div>
-                                <div class="method-fee">Biaya: 0.7%</div>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="payment-method">
-                        <input type="radio" name="paymentMethod" value="shopeepay" data-fee-type="percentage"
-                            data-fee-value="0.02">
-                        <div class="method-card">
-                            <div class="method-icon" style="background: #EE4D2D;">
-                                <span style="color: white; font-weight: bold;">SP</span>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">ShopeePay</div>
-                                <div class="method-fee">Biaya: 2%</div>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Virtual Account -->
-            <div class="payment-category">
-                <h4>Transfer Bank (Virtual Account)</h4>
-                <div class="payment-methods">
-                    <label class="payment-method">
-                        <input type="radio" name="paymentMethod" value="bca" data-fee-type="flat" data-fee-value="4000">
-                        <div class="method-card">
-                            <div class="method-icon" style="background: #003F87;">
-                                <span style="color: white; font-weight: bold; font-size: 0.7rem;">BCA</span>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">BCA Virtual Account</div>
-                                <div class="method-fee">Biaya: Rp 4.000</div>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="payment-method">
-                        <input type="radio" name="paymentMethod" value="bni" data-fee-type="flat" data-fee-value="4000">
-                        <div class="method-card">
-                            <div class="method-icon" style="background: #EC6D23;">
-                                <span style="color: white; font-weight: bold; font-size: 0.7rem;">BNI</span>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">BNI Virtual Account</div>
-                                <div class="method-fee">Biaya: Rp 4.000</div>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="payment-method">
-                        <input type="radio" name="paymentMethod" value="bri" data-fee-type="flat" data-fee-value="4000">
-                        <div class="method-card">
-                            <div class="method-icon" style="background: #003D79;">
-                                <span style="color: white; font-weight: bold; font-size: 0.7rem;">BRI</span>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">BRI Virtual Account</div>
-                                <div class="method-fee">Biaya: Rp 4.000</div>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="payment-method">
-                        <input type="radio" name="paymentMethod" value="permata" data-fee-type="flat"
-                            data-fee-value="4000">
-                        <div class="method-card">
-                            <div class="method-icon" style="background: #7AB344;">
-                                <span style="color: white; font-weight: bold; font-size: 0.6rem;">PRMT</span>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">Permata VA</div>
-                                <div class="method-fee">Biaya: Rp 4.000</div>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-            </div>
         </div>
 
         <div class="card">
