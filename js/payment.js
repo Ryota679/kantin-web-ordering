@@ -17,8 +17,10 @@ async function createPayment(orderId) {
                     'X-Appwrite-Project': APPWRITE_CONFIG.projectId,
                 },
                 body: JSON.stringify({
-                    orderId: orderId,
-                    platform: 'web'  // Important: tells backend to use web callback URL
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        platform: 'web'
+                    })
                 })
             }
         );
