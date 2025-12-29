@@ -3,6 +3,7 @@ const APPWRITE_CONFIG = {
     projectId: 'perojek-pml',
     endpoint: 'https://fra.cloud.appwrite.io/v1',
     databaseId: 'kantin-db',
+    ordersCollectionId: 'orders', // Add shortcut for payment flow
     collections: {
         orders: 'orders',
         products: 'products',
