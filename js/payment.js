@@ -6,7 +6,6 @@
  * @returns {Promise<Object>} Payment data with snapToken and redirectUrl
  */
 async function createPayment(orderId) {
-    console.log('📡 createPayment called with orderId:', orderId);
     try {
         const response = await fetch(
             `${APPWRITE_CONFIG.endpoint}/functions/${PAYMENT_FUNCTION_ID}/executions`,
@@ -26,37 +25,27 @@ async function createPayment(orderId) {
         );
 
         const execution = await response.json();
-        console.log('📡 Execution response:', execution);
 
         // Check if response is an error from Appwrite API
         if (execution.code && execution.type) {
-            // This is an API error, not a function execution
-            console.error('❌ Appwrite API Error:', execution);
             throw new Error(`${execution.message} (${execution.type})`);
         }
 
         // Parse the response body from function execution
         if (!execution.responseBody) {
-            console.error('❌ No responseBody in execution');
             throw new Error('Function execution failed - no response body');
         }
 
         const result = JSON.parse(execution.responseBody);
-        console.log('📡 Parsed result:', result);
 
         if (result.success && result.redirectUrl) {
-            console.log('✅ Payment created successfully');
-            console.log('🔗 Redirect URL:', result.redirectUrl);
-
             // Redirect to Midtrans payment page
             window.location.href = result.redirectUrl;
             return result;
         } else {
-            console.error('❌ Payment creation failed or missing redirectUrl:', result);
             throw new Error(result.error || 'Failed to create payment or missing redirect URL');
         }
     } catch (error) {
-        console.error('Payment error:', error);
         throw error;
     }
 }

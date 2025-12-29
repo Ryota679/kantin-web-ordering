@@ -207,46 +207,35 @@
         }
 
         async function proceedToPayment() {
-            console.log('🔘 Bayar Sekarang clicked!');
-
             const payBtn = document.getElementById('payBtn');
             const errorDiv = document.getElementById('error');
 
             if (!payBtn) {
-                console.error('❌ payBtn element not found!');
                 alert('Error: Payment button not found');
                 return;
             }
 
-            console.log('✅ Payment button found');
             payBtn.textContent = 'Memproses...';
             payBtn.disabled = true;
 
             try {
                 const orderId = sessionStorage.getItem('currentOrderId');
-                console.log('📋 Order ID from session:', orderId);
 
                 if (!orderId) {
-                    console.error('❌ No order ID in session storage');
                     throw new Error('Order ID tidak ditemukan. Silakan buat pesanan terlebih dahulu.');
                 }
 
-                console.log('💳 Calling createPayment...');
-
-                // Create payment
-                const paymentResult = await createPayment(orderId);
-                console.log('✅ Payment created:', paymentResult);
-
-                // Redirect to Midtrans payment page
-                console.log('🔗 Redirecting to:', paymentResult.data.redirectUrl);
-                window.location.href = paymentResult.data.redirectUrl;
+                // Create payment - will auto-redirect on success
+                await createPayment(orderId);
 
             } catch (error) {
-                console.error('❌ Payment error:', error);
-                alert('Error: ' + error.message);
-                errorDiv.textContent = 'Gagal memproses pembayaran: ' + error.message;
-                errorDiv.style.display = 'block';
-                errorDiv.scrollIntoView({ behavior: 'smooth' });
+                // Only show error if redirect didn't happen
+                if (!error.message.includes('redirect')) {
+                    alert('Gagal memproses pembayaran: ' + error.message);
+                    errorDiv.textContent = 'Gagal memproses pembayaran: ' + error.message;
+                    errorDiv.style.display = 'block';
+                    errorDiv.scrollIntoView({ behavior: 'smooth' });
+                }
                 payBtn.textContent = 'Bayar Sekarang';
                 payBtn.disabled = false;
             }
