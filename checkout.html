@@ -6,6 +6,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - Kantin Order</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .payment-category {
+            margin-bottom: 24px;
+        }
+
+        .payment-category h4 {
+            font-size: 1rem;
+            color: #333;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .payment-method {
+            cursor: pointer;
+        }
+
+        .payment-method input[type="radio"] {
+            display: none;
+        }
+
+        .method-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .payment-method input:checked+.method-card {
+            border-color: var(--primary-color);
+            background: #f0f8ff;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+        }
+
+        .method-card:hover {
+            border-color: #999;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .method-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .method-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .method-fee {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -49,19 +130,129 @@
         </div>
 
         <div class="card">
+            <h3>Metode Pembayaran</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 16px;">Pilih metode pembayaran Anda</p>
+
+            <div id="paymentMethodError"
+                style="display: none; color: #dc3545; padding: 12px; background: #f8d7da; border-radius: 8px; margin-bottom: 16px;">
+                Silakan pilih metode pembayaran
+            </div>
+
+            <!-- E-Wallet -->
+            <div class="payment-category">
+                <h4>E-Wallet</h4>
+                <div class="payment-methods">
+                    <label class="payment-method">
+                        <input type="radio" name="paymentMethod" value="gopay" data-fee-type="percentage"
+                            data-fee-value="0.02">
+                        <div class="method-card">
+                            <div class="method-icon" style="background: #00AA13;">
+                                <span style="color: white; font-weight: bold;">Go</span>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">GoPay</div>
+                                <div class="method-fee">Biaya: 2%</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="payment-method">
+                        <input type="radio" name="paymentMethod" value="qris" data-fee-type="percentage"
+                            data-fee-value="0.007">
+                        <div class="method-card">
+                            <div class="method-icon" style="background: #FF6B00;">
+                                <span style="color: white; font-weight: bold;">QR</span>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">QRIS</div>
+                                <div class="method-fee">Biaya: 0.7%</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="payment-method">
+                        <input type="radio" name="paymentMethod" value="shopeepay" data-fee-type="percentage"
+                            data-fee-value="0.02">
+                        <div class="method-card">
+                            <div class="method-icon" style="background: #EE4D2D;">
+                                <span style="color: white; font-weight: bold;">SP</span>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">ShopeePay</div>
+                                <div class="method-fee">Biaya: 2%</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Virtual Account -->
+            <div class="payment-category">
+                <h4>Transfer Bank (Virtual Account)</h4>
+                <div class="payment-methods">
+                    <label class="payment-method">
+                        <input type="radio" name="paymentMethod" value="bca" data-fee-type="flat" data-fee-value="4000">
+                        <div class="method-card">
+                            <div class="method-icon" style="background: #003F87;">
+                                <span style="color: white; font-weight: bold; font-size: 0.7rem;">BCA</span>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">BCA Virtual Account</div>
+                                <div class="method-fee">Biaya: Rp 4.000</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="payment-method">
+                        <input type="radio" name="paymentMethod" value="bni" data-fee-type="flat" data-fee-value="4000">
+                        <div class="method-card">
+                            <div class="method-icon" style="background: #EC6D23;">
+                                <span style="color: white; font-weight: bold; font-size: 0.7rem;">BNI</span>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">BNI Virtual Account</div>
+                                <div class="method-fee">Biaya: Rp 4.000</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="payment-method">
+                        <input type="radio" name="paymentMethod" value="bri" data-fee-type="flat" data-fee-value="4000">
+                        <div class="method-card">
+                            <div class="method-icon" style="background: #003D79;">
+                                <span style="color: white; font-weight: bold; font-size: 0.7rem;">BRI</span>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">BRI Virtual Account</div>
+                                <div class="method-fee">Biaya: Rp 4.000</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="payment-method">
+                        <input type="radio" name="paymentMethod" value="permata" data-fee-type="flat"
+                            data-fee-value="4000">
+                        <div class="method-card">
+                            <div class="method-icon" style="background: #7AB344;">
+                                <span style="color: white; font-weight: bold; font-size: 0.6rem;">PRMT</span>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">Permata VA</div>
+                                <div class="method-fee">Biaya: Rp 4.000</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
             <h3>Ringkasan Pesanan</h3>
             <div id="orderSummary"></div>
             <div
                 style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--border-color); font-size: 1.2rem; font-weight: 600;">
                 <span>Total:</span>
                 <span id="totalPrice" style="color: var(--primary-color);"></span>
-            </div>
-            <div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px;">
-                <small style="color: #666; display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 16px;">💡</span>
-                    <span>Biaya admin akan disesuaikan dengan metode pembayaran yang dipilih (Rp 2.500 - Rp
-                        5.000)</span>
-                </small>
             </div>
         </div>
     </div>
@@ -87,6 +278,15 @@
 
             renderOrderSummary();
 
+            // Add event listeners to payment methods for real-time fee calculation
+            document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    renderOrderSummary();
+                    // Hide error message if shown
+                    document.getElementById('paymentMethodError').style.display = 'none';
+                });
+            });
+
             // Create payment section
             const paymentSection = document.createElement('div');
             paymentSection.id = 'paymentSection';
@@ -105,10 +305,38 @@
             document.querySelector('.container').appendChild(paymentSection);
         });
 
+        function calculateAdminFee(subtotal) {
+            const selected = document.querySelector('input[name="paymentMethod"]:checked');
+
+            if (!selected) return 0;
+
+            const feeType = selected.dataset.feeType;
+
+            if (feeType === 'flat') {
+                return parseInt(selected.dataset.feeValue);
+            }
+
+            if (feeType === 'percentage') {
+                return Math.ceil(subtotal * parseFloat(selected.dataset.feeValue));
+            }
+
+            if (feeType === 'mixed') {
+                const percentage = parseFloat(selected.dataset.feePercentage);
+                const fixed = parseInt(selected.dataset.feeFixed);
+                return Math.ceil(subtotal * percentage) + fixed;
+            }
+
+            return 0;
+        }
+
         function renderOrderSummary() {
             const cart = Cart.get(tenantCode);
             const summaryDiv = document.getElementById('orderSummary');
+            const subtotal = Cart.getTotal(tenantCode);
+            const adminFee = calculateAdminFee(subtotal);
+            const total = subtotal + adminFee;
 
+            // Render cart items
             summaryDiv.innerHTML = cart.map(item => `
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                     <div>
@@ -119,7 +347,25 @@
                 </div>
             `).join('');
 
-            const total = Cart.getTotal(tenantCode);
+            // Add subtotal and admin fee breakdown if method selected
+            if (adminFee > 0) {
+                const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
+                const methodName = selectedMethod ? selectedMethod.parentElement.querySelector('.method-name').textContent : 'Payment';
+
+                summaryDiv.innerHTML += `
+                    <div style="border-top: 1px solid #e0e0e0; margin: 12px 0; padding-top: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #666;">
+                            <span>Subtotal Menu</span>
+                            <span>${formatRupiah(subtotal)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: #e67e22; font-weight: 500;">
+                            <span>Biaya Admin (${methodName})</span>
+                            <span>${formatRupiah(adminFee)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
             document.getElementById('totalPrice').textContent = formatRupiah(total);
         }
 
@@ -140,9 +386,23 @@
             const tableNumber = document.getElementById('tableNumber').value.trim();
             const customerNotes = document.getElementById('customerNotes').value.trim();
 
+            // Validate payment method selected
+            const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+            if (!selectedPaymentMethod) {
+                errorDiv.textContent = 'Silakan pilih metode pembayaran terlebih dahulu';
+                errorDiv.style.display = 'block';
+                document.getElementById('paymentMethodError').style.display = 'block';
+                document.getElementById('paymentMethodError').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+
+            const paymentMethod = selectedPaymentMethod.value;
+
             // Get cart
             const cart = Cart.get(tenantCode);
-            const total = Cart.getTotal(tenantCode);
+            const subtotal = Cart.getTotal(tenantCode);
+            const adminFee = calculateAdminFee(subtotal);
+            const total = subtotal + adminFee;
 
             // Show loading
             submitBtn.textContent = 'Membuat pesanan...';
@@ -179,6 +439,8 @@
                     customer_notes: customerNotes || null,
                     items: JSON.stringify(cart),
                     total_price: total,
+                    admin_fee: adminFee,
+                    payment_type: paymentMethod,
                     order_status: 'pending'
                 };
 
@@ -232,8 +494,17 @@
                     throw new Error('Order ID tidak ditemukan. Silakan buat pesanan terlebih dahulu.');
                 }
 
-                // Create payment - will auto-redirect on success
-                await createPayment(orderId);
+                // Get order to retrieve payment method
+                const order = await databases.getDocument(
+                    APPWRITE_CONFIG.databaseId,
+                    APPWRITE_CONFIG.ordersCollectionId,
+                    orderId
+                );
+
+                const paymentMethod = order.payment_type;
+
+                // Create payment with Core API - will handle different payment types
+                await createPayment(orderId, paymentMethod);
 
             } catch (error) {
                 // Only show error if redirect didn't happen
