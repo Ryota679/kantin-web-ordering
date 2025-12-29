@@ -241,6 +241,17 @@
                     </div>
                 </div>
 
+                <!-- Order Summary - MOVED INSIDE FORM -->
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 1.1rem; margin-bottom: 12px;">Ringkasan Pesanan</h4>
+                    <div id="orderSummary"></div>
+                    <div
+                        style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--border-color); font-size: 1.2rem; font-weight: 600;">
+                        <span>Total:</span>
+                        <span id="totalPrice" style="color: var(--primary-color);"></span>
+                    </div>
+                </div>
+
                 <div id="error" class="error-message" style="display: none;"></div>
                 <div id="success" class="success-message" style="display: none;"></div>
 
@@ -248,16 +259,6 @@
                     Buat Pesanan
                 </button>
             </form>
-        </div>
-
-        <div class="card">
-            <h3>Ringkasan Pesanan</h3>
-            <div id="orderSummary"></div>
-            <div
-                style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--border-color); font-size: 1.2rem; font-weight: 600;">
-                <span>Total:</span>
-                <span id="totalPrice" style="color: var(--primary-color);"></span>
-            </div>
         </div>
     </div>
 
