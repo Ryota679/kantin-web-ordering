@@ -298,8 +298,33 @@
             paymentSection.className = 'card';
             paymentSection.style.display = 'none';
             paymentSection.innerHTML = `
-                <h3>Pembayaran</h3>
-                <p>Silakan pilih metode pembayaran:</p>
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="background: #d4edda; color: #155724; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 8px 0;">✅ Pesanan Berhasil Dibuat!</h3>
+                        <p style="margin: 0;">Nomor Invoice: <strong id="confirmInvoice">-</strong></p>
+                    </div>
+                </div>
+                
+                <h4 style="margin-bottom: 16px;">Detail Pesanan</h4>
+                <div id="confirmOrderSummary" style="margin-bottom: 16px;"></div>
+                
+                <div style="border-top: 2px solid var(--border-color); padding-top: 16px; margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #666;">Subtotal Menu:</span>
+                        <span id="confirmSubtotal" style="font-weight: 600;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #666;">Biaya Admin (<span id="confirmPaymentMethod">-</span>):</span>
+                        <span id="confirmFee" style="font-weight: 600; color: #e67e22;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 700; color: var(--primary-color);">
+                        <span>Total:</span>
+                        <span id="confirmTotal">-</span>
+                    </div>
+                </div>
+                
+                <h4 style="margin-bottom: 12px;">Pembayaran</h4>
+                <p style="color: #666; margin-bottom: 16px;">Silakan pilih opsi pembayaran:</p>
                 <button onclick="proceedToPayment()" id="payBtn" class="btn btn-primary" style="width: 100%; margin-bottom: 12px;">
                     💳 Bayar Sekarang
                 </button>
@@ -459,17 +484,37 @@
                 sessionStorage.setItem('currentOrderId', orderDoc.$id);
                 sessionStorage.setItem('currentInvoice', invoice);
 
-                // Show success and payment button
-                successDiv.innerHTML = `
-                    <strong>Pesanan berhasil dibuat!</strong><br>
-                    Invoice: ${invoice}<br>
-                    <small>Silakan lanjutkan ke pembayaran</small>
-                `;
-                successDiv.style.display = 'block';
-
-                // Hide form, show payment button
+                // Hide form and old messages
                 document.getElementById('checkoutForm').style.display = 'none';
+                successDiv.style.display = 'none'; // Hide old success message
+                errorDiv.style.display = 'none';
+
+                // Show payment section with order details
                 document.getElementById('paymentSection').style.display = 'block';
+
+                // Populate order confirmation details
+                document.getElementById('confirmInvoice').textContent = invoice;
+
+                // Populate order items
+                const confirmSummaryDiv = document.getElementById('confirmOrderSummary');
+                confirmSummaryDiv.innerHTML = cart.map(item => `
+                    <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 6px; margin-bottom: 8px;">
+                        <div>
+                            <div style="font-weight: 600;">${item.product_name}</div>
+                            <div style="font-size: 0.9rem; color: #666;">${item.quantity}x ${formatRupiah(item.price)}</div>
+                        </div>
+                        <div style="font-weight: 600;">${formatRupiah(item.price * item.quantity)}</div>
+                    </div>
+                `).join('');
+
+                // Populate totals
+                const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
+                const methodName = selectedMethod.parentElement.querySelector('.method-name').textContent;
+
+                document.getElementById('confirmSubtotal').textContent = formatRupiah(subtotal);
+                document.getElementById('confirmPaymentMethod').textContent = methodName;
+                document.getElementById('confirmFee').textContent = formatRupiah(adminFee);
+                document.getElementById('confirmTotal').textContent = formatRupiah(total);
 
             } catch (error) {
                 console.error('Error:', error);
