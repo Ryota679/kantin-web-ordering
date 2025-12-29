@@ -498,12 +498,12 @@
                 // Populate order items
                 const confirmSummaryDiv = document.getElementById('confirmOrderSummary');
                 confirmSummaryDiv.innerHTML = cart.map(item => `
-                    <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 6px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; padding: 12px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px;">
                         <div>
-                            <div style="font-weight: 600;">${item.product_name}</div>
+                            <div style="font-weight: 600; color: #333;">${item.product_name}</div>
                             <div style="font-size: 0.9rem; color: #666;">${item.quantity}x ${formatRupiah(item.price)}</div>
                         </div>
-                        <div style="font-weight: 600;">${formatRupiah(item.price * item.quantity)}</div>
+                        <div style="font-weight: 600; color: #333;">${formatRupiah(item.price * item.quantity)}</div>
                     </div>
                 `).join('');
 
@@ -515,6 +515,9 @@
                 document.getElementById('confirmPaymentMethod').textContent = methodName;
                 document.getElementById('confirmFee').textContent = formatRupiah(adminFee);
                 document.getElementById('confirmTotal').textContent = formatRupiah(total);
+
+                // Store payment method for later use
+                sessionStorage.setItem('currentPaymentMethod', paymentMethod);
 
             } catch (error) {
                 console.error('Error:', error);
@@ -539,19 +542,11 @@
 
             try {
                 const orderId = sessionStorage.getItem('currentOrderId');
+                const paymentMethod = sessionStorage.getItem('currentPaymentMethod');
 
-                if (!orderId) {
-                    throw new Error('Order ID tidak ditemukan. Silakan buat pesanan terlebih dahulu.');
+                if (!orderId || !paymentMethod) {
+                    throw new Error('Order ID atau metode pembayaran tidak ditemukan.');
                 }
-
-                // Get order to retrieve payment method
-                const order = await databases.getDocument(
-                    APPWRITE_CONFIG.databaseId,
-                    APPWRITE_CONFIG.ordersCollectionId,
-                    orderId
-                );
-
-                const paymentMethod = order.payment_type;
 
                 // Create payment with Core API - will handle different payment types
                 await createPayment(orderId, paymentMethod);
