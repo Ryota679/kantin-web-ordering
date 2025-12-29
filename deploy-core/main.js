@@ -1,5 +1,4 @@
 const midtransClient = require('midtrans-client');
-const { Client, Databases, Query } = require('node-appwrite');
 
 // Initialize Core API client
 const coreApi = new midtransClient.CoreApi({
@@ -8,16 +7,16 @@ const coreApi = new midtransClient.CoreApi({
     clientKey: process.env.MIDTRANS_CLIENT_KEY
 });
 
-async function chargeGoPay(order, log) {
+async function chargeGoPay(invoiceNumber, totalAmount, log) {
     const parameter = {
         payment_type: 'gopay',
         transaction_details: {
-            order_id: order.invoice_number,
-            gross_amount: order.total_price
+            order_id: invoiceNumber,
+            gross_amount: totalAmount
         },
         gopay: {
             enable_callback: true,
-            callback_url: `${process.env.WEB_CALLBACK_URL || 'https://kantin-web-ordering.vercel.app'}/payment-callback.html?order_id=${order.$id}`
+            callback_url: `${process.env.WEB_CALLBACK_URL || 'https://kantin-web-ordering.vercel.app'}/payment-callback.html`
         }
     };
 
@@ -30,12 +29,12 @@ async function chargeGoPay(order, log) {
     };
 }
 
-async function chargeQRIS(order, log) {
+async function chargeQRIS(invoiceNumber, totalAmount, log) {
     const parameter = {
         payment_type: 'qris',
         transaction_details: {
-            order_id: order.invoice_number,
-            gross_amount: order.total_price
+            order_id: invoiceNumber,
+            gross_amount: totalAmount
         }
     };
 
@@ -48,12 +47,12 @@ async function chargeQRIS(order, log) {
     };
 }
 
-async function chargeVirtualAccount(order, bank, log) {
+async function chargeVirtualAccount(invoiceNumber, totalAmount, bank, log) {
     const parameter = {
         payment_type: 'bank_transfer',
         transaction_details: {
-            order_id: order.invoice_number,
-            gross_amount: order.total_price
+            order_id: invoiceNumber,
+            gross_amount: totalAmount
         },
         bank_transfer: {
             bank: bank
@@ -70,15 +69,15 @@ async function chargeVirtualAccount(order, bank, log) {
     };
 }
 
-async function chargeShopeePay(order, log) {
+async function chargeShopeePay(invoiceNumber, totalAmount, log) {
     const parameter = {
         payment_type: 'shopeepay',
         transaction_details: {
-            order_id: order.invoice_number,
-            gross_amount: order.total_price
+            order_id: invoiceNumber,
+            gross_amount: totalAmount
         },
         shopeepay: {
-            callback_url: `${process.env.WEB_CALLBACK_URL || 'https://kantin-web-ordering.vercel.app'}/payment-callback.html?order_id=${order.$id}`
+            callback_url: `${process.env.WEB_CALLBACK_URL || 'https://kantin-web-ordering.vercel.app'}/payment-callback.html`
         }
     };
 
@@ -93,70 +92,54 @@ async function chargeShopeePay(order, log) {
 
 module.exports = async ({ req, res, log, error }) => {
     try {
-        // Parse request body
-        let body;
-        if (typeof req.body === 'string') {
-            body = JSON.parse(req.body || '{}');
-        } else {
-            body = req.body || {};
+        log('📥 Request received');
+
+        // Simplified body parsing for Appwrite
+        const bodyString = req.bodyRaw || req.body || '{}';
+
+        let parsedBody;
+        try {
+            parsedBody = typeof bodyString === 'string' ? JSON.parse(bodyString) : bodyString;
+        } catch (e) {
+            parsedBody = {};
         }
 
-        // Extract body if double-wrapped (from Appwrite execution API)
-        if (body.body && typeof body.body === 'string') {
-            body = JSON.parse(body.body);
-        }
+        // Handle double-wrapped body from Appwrite SDK
+        const body = parsedBody.body ? JSON.parse(parsedBody.body) : parsedBody;
 
-        const { orderId, paymentMethod } = body;
+        const { invoiceNumber, totalAmount, paymentMethod } = body;
 
         log('💳 Payment request received');
-        log(`📦 Order ID: ${orderId}`);
-        log(`💰 Payment Method: ${paymentMethod}`);
+        log(`📄 Invoice: ${invoiceNumber}`);
+        log(`💵 Amount: ${totalAmount}`);
+        log(`💰 Method: ${paymentMethod}`);
 
-        if (!orderId || !paymentMethod) {
+        if (!invoiceNumber || !totalAmount || !paymentMethod) {
             error('❌ Missing required parameters');
             return res.json({
                 success: false,
-                error: 'orderId and paymentMethod are required'
+                error: 'invoiceNumber, totalAmount, and paymentMethod are required'
             }, 400);
         }
-
-        // Initialize Appwrite
-        const client = new Client()
-            .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
-            .setProject(process.env.APPWRITE_PROJECT_ID)
-            .setKey(process.env.APPWRITE_API_KEY);
-
-        const databases = new Databases(client);
-
-        // Get order details
-        const order = await databases.getDocument(
-            process.env.DATABASE_ID,
-            process.env.ORDERS_COLLECTION_ID,
-            orderId
-        );
-
-        log(`✅ Order found: ${order.invoice_number}`);
-        log(`💵 Total amount: ${order.total_price}`);
-        log(`📋 Admin fee: ${order.admin_fee || 0}`);
 
         // Route to specific payment method
         let chargeResult;
 
         switch (paymentMethod) {
             case 'gopay':
-                chargeResult = await chargeGoPay(order, log);
+                chargeResult = await chargeGoPay(invoiceNumber, totalAmount, log);
                 break;
             case 'qris':
-                chargeResult = await chargeQRIS(order, log);
+                chargeResult = await chargeQRIS(invoiceNumber, totalAmount, log);
                 break;
             case 'shopeepay':
-                chargeResult = await chargeShopeePay(order, log);
+                chargeResult = await chargeShopeePay(invoiceNumber, totalAmount, log);
                 break;
             case 'bca':
             case 'bni':
             case 'bri':
             case 'permata':
-                chargeResult = await chargeVirtualAccount(order, paymentMethod, log);
+                chargeResult = await chargeVirtualAccount(invoiceNumber, totalAmount, paymentMethod, log);
                 break;
             default:
                 error(`❌ Unsupported payment method: ${paymentMethod}`);
@@ -170,8 +153,7 @@ module.exports = async ({ req, res, log, error }) => {
 
         return res.json({
             success: true,
-            orderId: order.$id,
-            orderNumber: order.invoice_number,
+            orderNumber: invoiceNumber,
             paymentData: chargeResult
         });
 

@@ -3,8 +3,15 @@ const { Client, Databases } = require('node-appwrite');
 
 module.exports = async ({ req, res, log, error }) => {
     try {
-        // Parse request body
-        const { action, orderId, platform } = JSON.parse(req.body || '{}');
+        // Parse request body - Appwrite may send pre-parsed object or string
+        let body;
+        if (typeof req.body === 'string') {
+            body = JSON.parse(req.body || '{}');
+        } else {
+            body = req.body || {};
+        }
+
+        const { action, orderId, platform } = body;
 
         if (!orderId) {
             error('❌ Missing orderId in request');
@@ -75,7 +82,7 @@ async function createPayment({ orderId, platform, res, log, error }) {
         },
         customer_details: {
             first_name: order.customer_name,
-            phone: order.customer_phone || order.table_number, // Use phone if available
+            phone: order.table_number, // Using table_number as phone for now
         },
         // Enable specific payment methods
         enabled_payments: [
@@ -92,7 +99,6 @@ async function createPayment({ orderId, platform, res, log, error }) {
     };
 
     log(`💳 Creating Snap transaction...`);
-    log(`🔗 Callback URL: ${parameter.callbacks.finish}`);
     const transaction = await snap.createTransaction(parameter);
 
     log(`✅ Snap token created successfully`);
@@ -102,16 +108,10 @@ async function createPayment({ orderId, platform, res, log, error }) {
     // Return success response
     return res.json({
         success: true,
-        data: {
-            snapToken: transaction.token,
-            redirectUrl: transaction.redirect_url,
-            orderId: orderId,
-            orderNumber: order.invoice_number,
-        },
-        metadata: {
-            timestamp: new Date().toISOString(),
-            platform: platform || 'mobile'
-        }
+        snapToken: transaction.token,
+        redirectUrl: transaction.redirect_url,
+        orderId: orderId,
+        orderNumber: order.invoice_number,
     });
 }
 
@@ -139,7 +139,7 @@ async function checkPaymentStatus({ orderId, res, log, error }) {
 
     if (!order) {
         error(`Order not found: ${orderId}`);
-        return res.json({ success: false, error: 'Order not found' }, 404);
+        return res.json({ error: 'Order not found' }, 404);
     }
 
     const invoiceNumber = order.invoice_number;
@@ -201,16 +201,12 @@ async function checkPaymentStatus({ orderId, res, log, error }) {
     // Return response
     return res.json({
         success: true,
-        data: {
-            orderId,
-            invoiceNumber,
-            transactionStatus: statusResponse.transaction_status,
-            orderStatus,
-            paymentType: statusResponse.payment_type,
-            grossAmount: statusResponse.gross_amount,
-        },
-        metadata: {
-            updatedAt: new Date().toISOString()
-        }
+        orderId,
+        invoiceNumber,
+        transactionStatus: statusResponse.transaction_status,
+        orderStatus,
+        paymentType: statusResponse.payment_type,
+        grossAmount: statusResponse.gross_amount,
+        updatedAt: new Date().toISOString()
     });
 }

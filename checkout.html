@@ -483,6 +483,7 @@
                 // Save order ID for payment
                 sessionStorage.setItem('currentOrderId', orderDoc.$id);
                 sessionStorage.setItem('currentInvoice', invoice);
+                sessionStorage.setItem('currentTotal', total.toString());
 
                 // Hide form and old messages
                 document.getElementById('checkoutForm').style.display = 'none';
@@ -541,15 +542,16 @@
             payBtn.disabled = true;
 
             try {
-                const orderId = sessionStorage.getItem('currentOrderId');
+                const invoiceNumber = sessionStorage.getItem('currentInvoice');
+                const totalAmount = parseInt(sessionStorage.getItem('currentTotal'));
                 const paymentMethod = sessionStorage.getItem('currentPaymentMethod');
 
-                if (!orderId || !paymentMethod) {
-                    throw new Error('Order ID atau metode pembayaran tidak ditemukan.');
+                if (!invoiceNumber || !totalAmount || !paymentMethod) {
+                    throw new Error('Data pembayaran tidak lengkap.');
                 }
 
                 // Create payment with Core API - will handle different payment types
-                await createPayment(orderId, paymentMethod);
+                await createPayment(invoiceNumber, totalAmount, paymentMethod);
 
             } catch (error) {
                 // Only show error if redirect didn't happen

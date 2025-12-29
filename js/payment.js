@@ -1,12 +1,11 @@
-// Payment Integration Functions
-
 /**
  * Create Midtrans payment for an order using Core API
- * @param {string} orderId - Appwrite order document ID
+ * @param {string} invoiceNumber - Order invoice number
+ * @param {number} totalAmount - Total amount to charge
  * @param {string} paymentMethod - Selected payment method (gopay, qris, bca, etc)
  * @returns {Promise<Object>} Payment data
  */
-async function createPayment(orderId, paymentMethod) {
+async function createPayment(invoiceNumber, totalAmount, paymentMethod) {
     try {
         const response = await fetch(
             `${APPWRITE_CONFIG.endpoint}/functions/${PAYMENT_FUNCTION_ID}/executions`,
@@ -18,7 +17,8 @@ async function createPayment(orderId, paymentMethod) {
                 },
                 body: JSON.stringify({
                     body: JSON.stringify({
-                        orderId: orderId,
+                        invoiceNumber: invoiceNumber,
+                        totalAmount: totalAmount,
                         paymentMethod: paymentMethod,
                         platform: 'web'
                     })
