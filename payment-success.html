@@ -64,6 +64,11 @@
                     <div class="invoice-number" id="invoiceNumber">-</div>
                 </div>
 
+                <div id="paymentBreakdown"
+                    style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+
                 <p style="color: var(--text-secondary);">
                     Pesanan Anda sedang diproses.<br>
                     Silakan pantau status pesanan Anda.
@@ -81,13 +86,75 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
     <script>
-        // Get invoice from URL
+        // Get params from URL
         const urlParams = new URLSearchParams(window.location.search);
         const invoice = urlParams.get('invoice');
+        const orderId = urlParams.get('order_id');
 
         if (invoice) {
             document.getElementById('invoiceNumber').textContent = invoice;
+        }
+
+        // Fetch order details to show payment breakdown
+        if (orderId) {
+            const client = new Appwrite.Client()
+                .setEndpoint(APPWRITE_CONFIG.endpoint)
+                .setProject(APPWRITE_CONFIG.projectId);
+
+            const databases = new Appwrite.Databases(client);
+
+            databases.getDocument(
+                APPWRITE_CONFIG.databaseId,
+                APPWRITE_CONFIG.ordersCollectionId,
+                orderId
+            ).then(order => {
+                const subtotal = order.total_price - (order.admin_fee || 0);
+                const adminFee = order.admin_fee || 0;
+                const total = order.total_price;
+                const paymentType = order.payment_type || 'Payment';
+
+                document.getElementById('paymentBreakdown').innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #666;">Subtotal Menu:</span>
+                            <span style="font-weight: 600;">${formatRupiah(subtotal)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #666;">Biaya Admin (${formatPaymentType(paymentType)}):</span>
+                            <span style="font-weight: 600;">${formatRupiah(adminFee)}</span>
+                        </div>
+                        <div style="height: 1px; background: #dee2e6; margin: 8px 0;"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 1.1rem;">
+                            <span style="font-weight: 700;">Total Dibayar:</span>
+                            <span style="font-weight: 700; color: var(--primary-color);">${formatRupiah(total)}</span>
+                        </div>
+                    </div>
+                `;
+            }).catch(error => {
+                console.error('Error fetching order:', error);
+            });
+        }
+
+        function formatPaymentType(type) {
+            const types = {
+                'gopay': 'GoPay',
+                'qris': 'QRIS',
+                'bank_transfer': 'Transfer Bank',
+                'bca_va': 'BCA Virtual Account',
+                'bni_va': 'BNI Virtual Account',
+                'bri_va': 'BRI Virtual Account',
+                'credit_card': 'Kartu Kredit',
+                'shopeepay': 'ShopeePay',
+                'dana': 'DANA',
+                'cstore': 'Minimarket',
+                'akulaku': 'Akulaku',
+                'kredivo': 'Kredivo'
+            };
+            return types[type] || type;
         }
 
         function goToTracking() {

@@ -1,0 +1,9 @@
+{
+    "name": "midtrans-webhook-handler",
+    "version": "1.0.0",
+    "description": "Webhook handler for Midtrans payment notifications with dynamic fee calculation",
+    "main": "main.js",
+    "dependencies": {
+        "node-appwrite": "^11.0.0"
+    }
+}
