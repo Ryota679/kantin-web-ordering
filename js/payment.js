@@ -43,14 +43,13 @@ async function createPayment(orderId) {
 
         const result = JSON.parse(execution.responseBody);
         console.log('📡 Parsed result:', result);
-        console.log('📡 Result.data:', result.data);
 
-        if (result.success && result.data && result.data.redirectUrl) {
+        if (result.success && result.redirectUrl) {
             console.log('✅ Payment created successfully');
-            console.log('🔗 Redirect URL:', result.data.redirectUrl);
+            console.log('🔗 Redirect URL:', result.redirectUrl);
 
             // Redirect to Midtrans payment page
-            window.location.href = result.data.redirectUrl;
+            window.location.href = result.redirectUrl;
             return result;
         } else {
             console.error('❌ Payment creation failed or missing redirectUrl:', result);
