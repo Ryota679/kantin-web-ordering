@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing Payment - Kantin Order</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="status-message">
+                <div class="loader"></div>
+                <h2>Memeriksa Status Pembayaran...</h2>
+                <p>Mohon tunggu sebentar</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="js/config.js"></script>
+    <script src="js/payment.js"></script>
+    <script>
+        // Get order ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order_id');
+
+        if (!orderId) {
+            alert('Order ID tidak valid');
+            window.location.href = 'index.html';
+        } else {
+            // Check payment status
+            checkPaymentStatus(orderId)
+                .then(result => {
+                    console.log('Payment status:', result);
+
+                    if (result.orderStatus === 'confirmed') {
+                        // Payment successful
+                        window.location.href = `payment-success.html?order_id=${orderId}&invoice=${result.invoiceNumber}`;
+                    } else if (result.orderStatus === 'cancelled') {
+                        // Payment failed or cancelled
+                        window.location.href = `payment-failed.html?order_id=${orderId}&invoice=${result.invoiceNumber}`;
+                    } else {
+                        // Still pending
+                        window.location.href = `payment-failed.html?order_id=${orderId}&invoice=${result.invoiceNumber}&status=pending`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking payment:', error);
+                    window.location.href = `payment-failed.html?order_id=${orderId}&error=check_failed`;
+                });
+        }
+    </script>
+</body>
+
+</html>

@@ -11,6 +11,9 @@ const APPWRITE_CONFIG = {
     }
 };
 
+// Payment Function ID
+const PAYMENT_FUNCTION_ID = '694e07e88294f8fa5e7';
+
 // Initialize Appwrite
 const { client, databases, account } = initializeAppwrite();
 

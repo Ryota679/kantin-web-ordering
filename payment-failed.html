@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran Gagal - Kantin Order</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .failed-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #dc3545;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin: 0 auto 20px;
+        }
+
+        .failed-message {
+            text-align: center;
+        }
+
+        .invoice-box {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .invoice-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 8px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="failed-message">
+                <div class="failed-icon">✕</div>
+                <h2 id="failedTitle">Pembayaran Gagal</h2>
+                <p id="failedDescription">Pembayaran Anda tidak berhasil diproses</p>
+
+                <div class="invoice-box" id="invoiceBox" style="display: none;">
+                    <p style="margin: 0; color: var(--text-secondary);">Nomor Invoice</p>
+                    <div class="invoice-number" id="invoiceNumber">-</div>
+                </div>
+
+                <div class="warning-box" id="statusMessage" style="display: none;">
+                    <!-- Status message will be inserted here -->
+                </div>
+
+                <div class="action-buttons">
+                    <button onclick="retryPayment()" class="btn btn-primary" id="retryBtn" style="display: none;">
+                        🔄 Coba Lagi
+                    </button>
+                    <button onclick="goToTracking()" class="btn" style="background: #6c757d; color: white;"
+                        id="trackingBtn" style="display: none;">
+                        📋 Lihat Pesanan
+                    </button>
+                    <button onclick="goToMenu()" class="btn" style="background: #6c757d; color: white;">
+                        🏠 Kembali
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get parameters from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const invoice = urlParams.get('invoice');
+        const orderId = urlParams.get('order_id');
+        const status = urlParams.get('status');
+        const error = urlParams.get('error');
+
+        // Display invoice if available
+        if (invoice) {
+            document.getElementById('invoiceBox').style.display = 'block';
+            document.getElementById('invoiceNumber').textContent = invoice;
+            document.getElementById('trackingBtn').style.display = 'block';
+        }
+
+        // Customize message based on status
+        if (status === 'pending') {
+            document.getElementById('failedTitle').textContent = 'Pembayaran Pending';
+            document.getElementById('failedDescription').textContent = 'Pembayaran Anda masih dalam proses';
+            document.getElementById('statusMessage').innerHTML = `
+                <strong>⏳ Status: Menunggu Pembayaran</strong><br>
+                <small>Silakan selesaikan pembayaran atau coba lagi nanti</small>
+            `;
+            document.getElementById('statusMessage').style.display = 'block';
+        } else if (error === 'check_failed') {
+            document.getElementById('failedDescription').textContent = 'Gagal memeriksa status pembayaran';
+            document.getElementById('statusMessage').innerHTML = `
+                <strong>⚠️ Terjadi Kesalahan</strong><br>
+                <small>Silakan cek pesanan Anda atau hubungi admin</small>
+            `;
+            document.getElementById('statusMessage').style.display = 'block';
+        }
+
+        // Show retry button if we have order ID
+        if (orderId) {
+            document.getElementById('retryBtn').style.display = 'block';
+        }
+
+        function retryPayment() {
+            if (orderId) {
+                // Redirect back to payment
+                sessionStorage.setItem('currentOrderId', orderId);
+                if (invoice) {
+                    sessionStorage.setItem('currentInvoice', invoice);
+                }
+                window.location.href = `checkout.html?retry=true`;
+            } else {
+                alert('Order ID tidak ditemukan');
+            }
+        }
+
+        function goToTracking() {
+            if (invoice) {
+                window.location.href = `tracking.html?invoice=${invoice}`;
+            } else {
+                alert('Invoice tidak ditemukan');
+            }
+        }
+
+        function goToMenu() {
+            sessionStorage.removeItem('currentOrderId');
+            sessionStorage.removeItem('currentInvoice');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

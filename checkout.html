@@ -63,6 +63,7 @@
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
     <script src="js/invoice-service.js"></script>
+    <script src="js/payment.js"></script>
     <script>
         const tenantCode = getCurrentTenant();
 
@@ -78,6 +79,23 @@
             }
 
             renderOrderSummary();
+
+            // Create payment section
+            const paymentSection = document.createElement('div');
+            paymentSection.id = 'paymentSection';
+            paymentSection.className = 'card';
+            paymentSection.style.display = 'none';
+            paymentSection.innerHTML = `
+                <h3>Pembayaran</h3>
+                <p>Silakan pilih metode pembayaran:</p>
+                <button onclick="proceedToPayment()" id="payBtn" class="btn btn-primary" style="width: 100%; margin-bottom: 12px;">
+                    💳 Bayar Sekarang
+                </button>
+                <button onclick="skipPayment()" class="btn" style="width: 100%; background: #6c757d; color: white;">
+                    Bayar Nanti (Lihat Pesanan)
+                </button>
+            `;
+            document.querySelector('.container').appendChild(paymentSection);
         });
 
         function renderOrderSummary() {
@@ -158,19 +176,26 @@
                 };
 
                 // Create order
-                await createOrder(orderData);
+                const orderDoc = await createOrder(orderData);
 
                 // Clear cart
                 Cart.clear(tenantCode);
 
-                // Show success
-                successDiv.textContent = `Pesanan berhasil! Invoice: ${invoice}`;
+                // Save order ID for payment
+                sessionStorage.setItem('currentOrderId', orderDoc.$id);
+                sessionStorage.setItem('currentInvoice', invoice);
+
+                // Show success and payment button
+                successDiv.innerHTML = `
+                    <strong>Pesanan berhasil dibuat!</strong><br>
+                    Invoice: ${invoice}<br>
+                    <small>Silakan lanjutkan ke pembayaran</small>
+                `;
                 successDiv.style.display = 'block';
 
-                // Redirect to tracking
-                setTimeout(() => {
-                    window.location.href = `tracking.html?invoice=${invoice}`;
-                }, 2000);
+                // Hide form, show payment button
+                document.getElementById('checkoutForm').style.display = 'none';
+                document.getElementById('paymentSection').style.display = 'block';
 
             } catch (error) {
                 console.error('Error:', error);
@@ -179,6 +204,59 @@
                 submitBtn.textContent = 'Buat Pesanan';
                 submitBtn.disabled = false;
             }
+        }
+
+        async function proceedToPayment() {
+            console.log('🔘 Bayar Sekarang clicked!');
+
+            const payBtn = document.getElementById('payBtn');
+            const errorDiv = document.getElementById('error');
+
+            if (!payBtn) {
+                console.error('❌ payBtn element not found!');
+                alert('Error: Payment button not found');
+                return;
+            }
+
+            console.log('✅ Payment button found');
+            payBtn.textContent = 'Memproses...';
+            payBtn.disabled = true;
+
+            try {
+                const orderId = sessionStorage.getItem('currentOrderId');
+                console.log('📋 Order ID from session:', orderId);
+
+                if (!orderId) {
+                    console.error('❌ No order ID in session storage');
+                    throw new Error('Order ID tidak ditemukan. Silakan buat pesanan terlebih dahulu.');
+                }
+
+                console.log('💳 Calling createPayment...');
+
+                // Create payment
+                const paymentResult = await createPayment(orderId);
+                console.log('✅ Payment created:', paymentResult);
+
+                // Redirect to Midtrans payment page
+                console.log('🔗 Redirecting to:', paymentResult.data.redirectUrl);
+                window.location.href = paymentResult.data.redirectUrl;
+
+            } catch (error) {
+                console.error('❌ Payment error:', error);
+                alert('Error: ' + error.message);
+                errorDiv.textContent = 'Gagal memproses pembayaran: ' + error.message;
+                errorDiv.style.display = 'block';
+                errorDiv.scrollIntoView({ behavior: 'smooth' });
+                payBtn.textContent = 'Bayar Sekarang';
+                payBtn.disabled = false;
+            }
+        }
+
+        function skipPayment() {
+            const invoice = sessionStorage.getItem('currentInvoice');
+            sessionStorage.removeItem('currentOrderId');
+            sessionStorage.removeItem('currentInvoice');
+            window.location.href = `tracking.html?invoice=${invoice}`;
         }
     </script>
 </body>
