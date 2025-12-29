@@ -197,13 +197,16 @@
             productsDiv.style.display = 'grid';
             productsDiv.innerHTML = products.map(product => {
                 const description = product.description || 'Menu lezat tersedia untuk Anda';
+                // Inline SVG placeholder - no external request needed
+                const fallbackImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200"%3E%3Crect fill="%23ddd" width="300" height="200"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="16" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
+
                 return `
                     <div class="product-card" onclick="openProductModal('${product.$id}')">
                         <img 
-                            src="${product.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" 
+                            src="${product.image_url || fallbackImage}" 
                             alt="${product.name}"
                             class="product-image"
-                            onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"
+                            onerror="this.src='${fallbackImage}'"
                         >
                         <div class="product-info">
                             <div class="product-name">${product.name}</div>
