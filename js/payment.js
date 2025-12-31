@@ -84,9 +84,7 @@ function showQRCodePayment(paymentData, orderNumber) {
                 ${paymentData.qrString ? `<div id="qrcode"></div>` : ''}
             </div>
             <p style="color: #666;">Scan QR code ini menggunakan aplikasi e-wallet yang mendukung QRIS</p>
-            <button onclick="window.location.href='payment-callback.html?order_id=' + sessionStorage.getItem('currentOrderId')" class="btn btn-primary" style="margin-top: 20px;">
-                Saya Sudah Bayar
-            </button>
+            <p style="color: #999; font-size: 0.9rem; margin-top: 16px;">Status pembayaran akan otomatis ter-update setelah pembayaran berhasil</p>
         </div>
     `;
 
@@ -131,10 +129,7 @@ function showVirtualAccountPayment(paymentData, orderNumber) {
                 </ol>
             </div>
             
-            <button onclick="window.location.href='payment-callback.html?order_id=' + sessionStorage.getItem('currentOrderId')" 
-                class="btn btn-primary" style="width: 100%;">
-                Saya Sudah Bayar
-            </button>
+            <p style="color: #999; font-size: 0.9rem; text-align: center;">Status pembayaran akan otomatis ter-update setelah pembayaran berhasil</p>
         </div>
     `;
 }
