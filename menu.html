@@ -96,6 +96,15 @@
 
         if (!tenantCode) {
             window.location.href = 'index.html';
+        } else {
+            // Update navigation links with tenant parameter
+            const navLinks = document.querySelectorAll('.bottom-nav a');
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.includes('?') && !href.includes('index.html')) {
+                    link.setAttribute('href', `${href}?tenant=${tenantCode}`);
+                }
+            });
         }
 
         // Load products on page load

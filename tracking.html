@@ -131,10 +131,22 @@
         // Auto-fill from URL
         const urlParams = new URLSearchParams(window.location.search);
         const invoiceFromUrl = urlParams.get('invoice');
+        const tenantFromUrl = urlParams.get('tenant');
 
         if (invoiceFromUrl) {
             document.getElementById('invoiceInput').value = invoiceFromUrl;
             trackOrder();
+        }
+
+        // Update navigation links with tenant parameter if available
+        if (tenantFromUrl) {
+            const navLinks = document.querySelectorAll('.bottom-nav a');
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.includes('?') && !href.includes('index.html')) {
+                    link.setAttribute('href', `${href}?tenant=${tenantFromUrl}`);
+                }
+            });
         }
 
         async function trackOrder() {
