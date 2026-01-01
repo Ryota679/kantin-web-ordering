@@ -73,6 +73,71 @@ async function createPayment(invoiceNumber, totalAmount, paymentMethod) {
     }
 }
 
+// Auto-poll payment status
+let pollingInterval = null;
+
+async function startPaymentStatusPolling(invoiceNumber) {
+    // Clear any existing polling
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+    }
+
+    console.log(`Starting payment status polling for ${invoiceNumber}`);
+
+    // Check immediately
+    await checkPaymentStatusAndRedirect(invoiceNumber);
+
+    // Then check every 5 seconds
+    pollingInterval = setInterval(async () => {
+        await checkPaymentStatusAndRedirect(invoiceNumber);
+    }, 5000);
+}
+
+async function checkPaymentStatusAndRedirect(invoiceNumber) {
+    try {
+        const databases = new Appwrite.Databases(appwriteClient);
+
+        // Query order by invoice number
+        const response = await databases.listDocuments(
+            DATABASE_ID,
+            ORDERS_COLLECTION_ID,
+            [Appwrite.Query.equal('invoice_number', invoiceNumber)]
+        );
+
+        if (response.documents.length > 0) {
+            const order = response.documents[0];
+            const status = order.order_status;
+
+            console.log(`Payment status: ${status}`);
+
+            // Handle status changes
+            if (status === 'confirmed' || status === 'paid') {
+                // Payment successful!
+                clearInterval(pollingInterval);
+                console.log('Payment successful! Redirecting...');
+                window.location.href = `payment-success.html?order_id=${order.$id}`;
+            } else if (status === 'cancelled' || status === 'failed') {
+                // Payment failed/cancelled
+                clearInterval(pollingInterval);
+                console.log('Payment failed/cancelled. Redirecting...');
+                window.location.href = `payment-failed.html?order_id=${order.$id}`;
+            }
+            // If still 'pending_payment', keep polling
+        }
+    } catch (error) {
+        console.error('Error checking payment status:', error);
+        // Don't stop polling on error, just log it
+    }
+}
+
+function stopPaymentPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+        console.log('Payment polling stopped');
+    }
+}
+
 // Countdown timer for payment expiry
 function startPaymentCountdown(expiryTime, paymentMethod) {
     const DEFAULT_EXPIRY = {
@@ -120,6 +185,9 @@ function startPaymentCountdown(expiryTime, paymentMethod) {
                 qrElement.style.opacity = '0.3';
                 qrElement.style.pointerEvents = 'none';
             }
+
+            // Stop polling when expired
+            stopPaymentPolling();
 
             return; // Stop updating
         }
@@ -199,6 +267,9 @@ function showQRCodePayment(paymentData, orderNumber) {
 
     // Start countdown timer
     startPaymentCountdown(paymentData.expiryTime, 'qris');
+
+    // Start auto-polling for payment status
+    startPaymentStatusPolling(orderNumber);
 }
 
 // Show Virtual Account number
@@ -251,6 +322,9 @@ function showVirtualAccountPayment(paymentData, orderNumber) {
 
     // Start countdown timer
     startPaymentCountdown(paymentData.expiryTime, paymentData.bank.toLowerCase());
+
+    // Start auto-polling for payment status
+    startPaymentStatusPolling(orderNumber);
 }
 
 /**
