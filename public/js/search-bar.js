@@ -71,7 +71,7 @@ const searchCache = {
             timestamp: Date.now(),
             accessCount: 1
         };
-        if (kDebugMode) console.log(`💾 Cached: "${cacheKey}" (${this.size()} items in cache)`);
+        if (kDebugMode) console.log(`Cached: "${cacheKey}" (${this.size()} items in cache)`);
     },
 
     /**
@@ -132,7 +132,10 @@ function initializeSearch(products) {
 
     // Store products globally
     allProducts = products || [];
-    if (kDebugMode) console.log(`Loaded ${allProducts.length} products for search`);
+    if (kDebugMode) {
+        console.log(`Loaded ${allProducts.length} products for search`);
+        console.log('Product names:', allProducts.map(p => p.name).join(', '));
+    }
 
     // Get DOM elements
     const searchInput = document.getElementById('searchInput');
@@ -329,6 +332,17 @@ function performSearch(query) {
         const endTime = performance.now();
         console.log(`Search time: ${(endTime - startTime).toFixed(2)}ms`);
         console.log(`Found ${results.length} matches`);
+        if (results.length > 0) {
+            console.log('Top matches:', results.map(r => `${r.product.name} (dist: ${r.distance})`));
+        } else {
+            console.log('DEBUG: No matches found. Checking first 3 products...');
+            allProducts.slice(0, 3).forEach(p => {
+                const norm = p.name.toLowerCase().trim();
+                const dist = levenshteinDistance(query.toLowerCase(), norm);
+                const thresh = Math.floor(norm.length * 0.40);
+                console.log(`  "${p.name}" (norm: "${norm}"): distance=${dist}, threshold=${thresh}, match=${dist <= thresh}`);
+            });
+        }
     }
 
     // Save to cache
@@ -362,7 +376,7 @@ function displayResults(results, query) {
     if (results.length === 0) {
         dropdown.innerHTML = `
             <div class="search-no-results">
-                <div class="search-no-results-icon">🔍</div>
+                <div class="search-no-results-icon">&#128269;</div>
                 <div class="search-no-results-text">Tidak ada hasil</div>
                 <div class="search-no-results-hint">Coba kata kunci lain</div>
             </div>
