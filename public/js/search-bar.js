@@ -16,7 +16,7 @@
  * Set to true to enable console logging for development
  * Set to false for production (hides all debug output)
  */
-const kDebugMode = false; // ⚠️ Set to false for production
+const kDebugMode = true; // WARNING: Set to false for production
 
 // ============================================
 // GLOBAL VARIABLES
@@ -50,11 +50,11 @@ const searchCache = {
 
         if (this._data[cacheKey]) {
             this._stats.hits++;
-            if (kDebugMode) console.log(`⚡ Cache HIT! (${this.getHitRate()}% hit rate)`);
+            if (kDebugMode) console.log(`Cache HIT! (${this.getHitRate()}% hit rate)`);
             return this._data[cacheKey];
         } else {
             this._stats.misses++;
-            if (kDebugMode) console.log(`🔍 Cache MISS (${this.getHitRate()}% hit rate)`);
+            if (kDebugMode) console.log(`Cache MISS (${this.getHitRate()}% hit rate)`);
             return null;
         }
     },
@@ -80,7 +80,7 @@ const searchCache = {
     clear() {
         this._data = {};
         this._stats = { hits: 0, misses: 0, totalSearches: 0 };
-        if (kDebugMode) console.log('🗑️ Cache cleared');
+        if (kDebugMode) console.log('Cache cleared');
     },
 
     /**
@@ -128,7 +128,7 @@ const searchCache = {
  * @param {Array} products - Array of product objects
  */
 function initializeSearch(products) {
-    if (kDebugMode) console.log('🔍 Initializing search bar...');
+    if (kDebugMode) console.log('Initializing search bar...');
 
     // Store products globally
     allProducts = products || [];
@@ -156,7 +156,7 @@ function initializeSearch(products) {
     // Click outside to close dropdown
     document.addEventListener('click', onDocumentClick);
 
-    if (kDebugMode) console.log('✅ Search bar initialized');
+    if (kDebugMode) console.log('Search bar initialized');
 }
 
 /**
@@ -166,7 +166,7 @@ function initializeSearch(products) {
 function updateSearchProducts(products) {
     allProducts = products || [];
     searchCache.clear(); // Clear cache when products change
-    if (kDebugMode) console.log(`🔄 Updated ${allProducts.length} products for search`);
+    if (kDebugMode) console.log(`Updated ${allProducts.length} products for search`);
 }
 
 // ============================================
@@ -316,19 +316,19 @@ function performSearch(query) {
         displayResults(cached.results, query);
         if (kDebugMode) {
             const endTime = performance.now();
-            console.log(`⏱️ Search time: ${(endTime - startTime).toFixed(2)}ms (from cache)`);
+            console.log(`Search time: ${(endTime - startTime).toFixed(2)}ms (from cache)`);
         }
         return;
     }
 
     // Calculate Levenshtein distance
-    if (kDebugMode) console.log('🔄 Calculating Levenshtein Distance...');
+    if (kDebugMode) console.log('Calculating Levenshtein Distance...');
     const results = fuzzySearchLevenshtein(query, allProducts, 0.40);
 
     if (kDebugMode) {
         const endTime = performance.now();
-        console.log(`⏱️ Search time: ${(endTime - startTime).toFixed(2)}ms`);
-        console.log(`📊 Found ${results.length} matches`);
+        console.log(`Search time: ${(endTime - startTime).toFixed(2)}ms`);
+        console.log(`Found ${results.length} matches`);
     }
 
     // Save to cache
