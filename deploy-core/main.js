@@ -21,12 +21,21 @@ async function chargeGoPay(invoiceNumber, totalAmount, log) {
     };
 
     log('📱 Charging GoPay...');
-    const charge = await coreApi.charge(parameter);
+    log(`DEBUG - GoPay Parameter: ${JSON.stringify(parameter, null, 2)}`);
 
-    return {
-        type: 'redirect',
-        redirectUrl: charge.actions.find(a => a.name === 'deeplink-redirect')?.url || charge.actions.find(a => a.name === 'generate-qr-code')?.url
-    };
+    try {
+        const charge = await coreApi.charge(parameter);
+        log(`DEBUG - GoPay Response: ${JSON.stringify(charge, null, 2)}`);
+        return {
+            type: 'redirect',
+            redirectUrl: charge.actions.find(a => a.name === 'deeplink-redirect')?.url || charge.actions.find(a => a.name === 'generate-qr-code')?.url,
+            expiryTime: charge.expiry_time || null
+        };
+    } catch (err) {
+        log(`ERROR - GoPay Failed: ${err.message}`);
+        log(`ERROR - Full Error: ${JSON.stringify(err, null, 2)}`);
+        throw err;
+    }
 }
 
 async function chargeQRIS(invoiceNumber, totalAmount, log) {
@@ -39,12 +48,21 @@ async function chargeQRIS(invoiceNumber, totalAmount, log) {
     };
 
     log('🔲 Charging QRIS...');
-    const charge = await coreApi.charge(parameter);
+    log(`DEBUG - QRIS Parameter: ${JSON.stringify(parameter, null, 2)}`);
 
-    return {
-        type: 'qr',
-        qrString: charge.qr_string
-    };
+    try {
+        const charge = await coreApi.charge(parameter);
+        log(`DEBUG - QRIS Response: ${JSON.stringify(charge, null, 2)}`);
+        return {
+            type: 'qr',
+            qrString: charge.qr_string,
+            expiryTime: charge.expiry_time || null
+        };
+    } catch (err) {
+        log(`ERROR - QRIS Failed: ${err.message}`);
+        log(`ERROR - Full Error: ${JSON.stringify(err, null, 2)}`);
+        throw err;
+    }
 }
 
 async function chargeVirtualAccount(invoiceNumber, totalAmount, bank, log) {
@@ -60,39 +78,29 @@ async function chargeVirtualAccount(invoiceNumber, totalAmount, bank, log) {
     };
 
     log(`🏦 Charging ${bank.toUpperCase()} VA...`);
-    const charge = await coreApi.charge(parameter);
+    log(`DEBUG - ${bank.toUpperCase()} VA Parameter: ${JSON.stringify(parameter, null, 2)}`);
 
-    return {
-        type: 'va',
-        vaNumber: charge.va_numbers[0].va_number,
-        bank: bank.toUpperCase()
-    };
-}
-
-async function chargeShopeePay(invoiceNumber, totalAmount, log) {
-    const parameter = {
-        payment_type: 'shopeepay',
-        transaction_details: {
-            order_id: invoiceNumber,
-            gross_amount: totalAmount
-        },
-        shopeepay: {
-            callback_url: `${process.env.WEB_CALLBACK_URL || 'https://kantin-web-ordering.vercel.app'}/payment-callback.html`
-        }
-    };
-
-    log('🛒 Charging ShopeePay...');
-    const charge = await coreApi.charge(parameter);
-
-    return {
-        type: 'redirect',
-        redirectUrl: charge.actions.find(a => a.name === 'deeplink-redirect')?.url
-    };
+    try {
+        const charge = await coreApi.charge(parameter);
+        log(`DEBUG - ${bank.toUpperCase()} VA Response: ${JSON.stringify(charge, null, 2)}`);
+        return {
+            type: 'va',
+            vaNumber: charge.va_numbers[0].va_number,
+            bank: bank.toUpperCase(),
+            expiryTime: charge.expiry_time || null
+        };
+    } catch (err) {
+        log(`ERROR - ${bank.toUpperCase()} VA Failed: ${err.message}`);
+        log(`ERROR - Full Error: ${JSON.stringify(err, null, 2)}`);
+        throw err;
+    }
 }
 
 module.exports = async ({ req, res, log, error }) => {
     try {
-        log('📥 Request received');
+        log('📥 ============ REQUEST START ============');
+        log(`Environment: ${process.env.MIDTRANS_IS_PRODUCTION === 'true' ? 'PRODUCTION' : 'SANDBOX'}`);
+        log(`Server Key (last 4): ...${process.env.MIDTRANS_SERVER_KEY?.slice(-4)}`);
 
         // Simplified body parsing for Appwrite
         const bodyString = req.bodyRaw || req.body || '{}';
@@ -125,6 +133,8 @@ module.exports = async ({ req, res, log, error }) => {
         // Route to specific payment method
         let chargeResult;
 
+        log(`🔀 Routing to payment method: ${paymentMethod}`);
+
         switch (paymentMethod) {
             case 'gopay':
                 chargeResult = await chargeGoPay(invoiceNumber, totalAmount, log);
@@ -132,12 +142,11 @@ module.exports = async ({ req, res, log, error }) => {
             case 'qris':
                 chargeResult = await chargeQRIS(invoiceNumber, totalAmount, log);
                 break;
-            case 'shopeepay':
-                chargeResult = await chargeShopeePay(invoiceNumber, totalAmount, log);
-                break;
-            case 'bca':
+            case 'bsi':
+            case 'cimb':
             case 'bni':
             case 'bri':
+            case 'mandiri':
             case 'permata':
                 chargeResult = await chargeVirtualAccount(invoiceNumber, totalAmount, paymentMethod, log);
                 break;
@@ -150,6 +159,8 @@ module.exports = async ({ req, res, log, error }) => {
         }
 
         log('✅ Payment charge successful');
+        log(`DEBUG - Charge Result: ${JSON.stringify(chargeResult, null, 2)}`);
+        log('============ REQUEST END ============');
 
         return res.json({
             success: true,
@@ -158,8 +169,11 @@ module.exports = async ({ req, res, log, error }) => {
         });
 
     } catch (err) {
-        error(`❌ Error: ${err.message}`);
-        error(err.stack);
+        error(`❌ FATAL Error: ${err.message}`);
+        error(`Stack: ${err.stack}`);
+        if (err.ApiResponse) {
+            error(`API Response: ${JSON.stringify(err.ApiResponse, null, 2)}`);
+        }
 
         return res.json({
             success: false,
