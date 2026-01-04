@@ -96,14 +96,14 @@ function calculateSimilarity(source, target) {
 
 
 /**
- * Fuzzy search products using Levenshtein Distance algorithm
+ * Fuzzy search products using Enhanced Levenshtein Distance algorithm
  * 
- * This function implements smart search with typo tolerance:
- * 1. Normalizes input (lowercase, trim)
- * 2. Calculates Levenshtein distance for each product
- * 3. Filters by threshold (40% of product name length)
- * 4. Sorts by relevance (distance ascending)
- * 5. Returns top 5 matches
+ * This function implements smart search with multiple strategies:
+ * 1. Exact substring matching (highest priority)
+ * 2. Word-level matching for multi-word product names
+ * 3. Full-string fuzzy matching with typo tolerance
+ * 4. Intelligent threshold based on query length
+ * 5. Advanced scoring and ranking
  * 
  * @param {string} query - User search query
  * @param {Array} products - Array of product objects from database
@@ -116,8 +116,13 @@ function calculateSimilarity(source, target) {
  *   { $id: '2', name: 'Ayam Bakar', price: 20000 }
  * ];
  * 
+ * // Exact word match
+ * fuzzySearchLevenshtein('ayam', products);
+ * // Returns: [{ product: "Ayam Bakar", matchType: "word", ... }]
+ * 
+ * // Typo tolerance
  * fuzzySearchLevenshtein('nasi goren', products);
- * // Returns: [{ product: {...}, distance: 1, similarity: 0.91, ... }]
+ * // Returns: [{ product: "Nasi Goreng", distance: 1, ... }]
  */
 function fuzzySearchLevenshtein(query, products, thresholdPercent = 0.40) {
     // Normalize query: lowercase and trim whitespace
@@ -128,44 +133,106 @@ function fuzzySearchLevenshtein(query, products, thresholdPercent = 0.40) {
         return [];
     }
 
-    // Calculate distance for each product
+    // Calculate query-based threshold for better typo tolerance
+    // For query "ayam" (4 chars): 4 * 0.40 = 1.6 → floor = 1 (allows 1 typo)
+    const queryBasedThreshold = Math.floor(normalizedQuery.length * thresholdPercent);
+
+    // Calculate distance for each product with multi-strategy matching
     const results = products.map(product => {
         // Normalize product name
         const normalizedName = product.name.toLowerCase().trim();
 
-        // Calculate Levenshtein distance
-        const distance = levenshteinDistance(normalizedQuery, normalizedName);
+        let matchType = 'none';
+        let distance = Infinity;
+        let confidence = 0;
 
-        // Calculate threshold based on product name length
-        // Example: "NASI GORENG" (11 chars) × 0.40 = 4.4 → floor = 4
-        const maxDistance = Math.floor(normalizedName.length * thresholdPercent);
+        // STRATEGY 1: Exact substring match (highest priority)
+        if (normalizedName.includes(normalizedQuery)) {
+            matchType = 'substring';
+            distance = 0;
+            confidence = 1.0;
+        } 
+        // STRATEGY 2: Word-level matching (for multi-word products)
+        else {
+            const words = normalizedName.split(/\s+/); // Split by whitespace
+            let bestWordDistance = Infinity;
+            
+            for (const word of words) {
+                const wordDistance = levenshteinDistance(normalizedQuery, word);
+                
+                // Check if this word matches within threshold
+                if (wordDistance <= queryBasedThreshold) {
+                    bestWordDistance = Math.min(bestWordDistance, wordDistance);
+                    matchType = 'word';
+                }
+            }
+            
+            if (matchType === 'word') {
+                distance = bestWordDistance;
+                // Word match confidence: 0.9 - 0.95 (high but less than exact)
+                confidence = 0.95 - (distance * 0.05);
+            }
+        }
 
-        // Calculate similarity score (0-1)
-        const similarity = calculateSimilarity(normalizedQuery, normalizedName);
+        // STRATEGY 3: Full-string fuzzy matching (fallback)
+        if (matchType === 'none') {
+            const fullDistance = levenshteinDistance(normalizedQuery, normalizedName);
+            
+            // Use dual threshold: check against both query and product length
+            const productBasedThreshold = Math.floor(normalizedName.length * thresholdPercent);
+            const effectiveThreshold = Math.max(queryBasedThreshold, Math.min(productBasedThreshold, queryBasedThreshold * 2));
+            
+            if (fullDistance <= effectiveThreshold) {
+                matchType = 'fuzzy';
+                distance = fullDistance;
+                // Calculate similarity-based confidence
+                confidence = calculateSimilarity(normalizedQuery, normalizedName);
+            }
+        }
+
+        // Calculate overall similarity score (0-1)
+        const similarity = matchType !== 'none' 
+            ? calculateSimilarity(normalizedQuery, normalizedName)
+            : 0;
 
         // Determine if it's a match
-        const isMatch = distance <= maxDistance;
+        const isMatch = matchType !== 'none';
 
         return {
-            product: product,           // Original product object
-            distance: distance,         // Levenshtein distance
-            maxDistance: maxDistance,   // Maximum allowed distance
-            similarity: similarity,     // Similarity score (0-1)
-            isMatch: isMatch,          // Whether it passes threshold
-            normalizedName: normalizedName // For debugging
+            product: product,              // Original product object
+            matchType: matchType,          // 'substring', 'word', 'fuzzy', or 'none'
+            distance: distance,            // Levenshtein distance
+            confidence: confidence,        // Match confidence (0-1)
+            similarity: similarity,        // Similarity score (0-1)
+            isMatch: isMatch,             // Whether it passes threshold
+            normalizedName: normalizedName, // For debugging
+            queryThreshold: queryBasedThreshold // For debugging
         };
     });
 
     // Filter only matching products
     const matches = results.filter(result => result.isMatch);
 
-    // Sort by distance (ascending) - closest matches first
-    // Secondary sort by similarity (descending) for ties
+    // Sort by match quality (multi-tier sorting)
     matches.sort((a, b) => {
-        if (a.distance !== b.distance) {
-            return a.distance - b.distance; // Lower distance = better match
+        // Priority 1: Match type (substring > word > fuzzy)
+        const typeOrder = { 'substring': 0, 'word': 1, 'fuzzy': 2 };
+        if (typeOrder[a.matchType] !== typeOrder[b.matchType]) {
+            return typeOrder[a.matchType] - typeOrder[b.matchType];
         }
-        return b.similarity - a.similarity; // Higher similarity = better match
+        
+        // Priority 2: Confidence score (higher is better)
+        if (Math.abs(a.confidence - b.confidence) > 0.01) {
+            return b.confidence - a.confidence;
+        }
+        
+        // Priority 3: Distance (lower is better)
+        if (a.distance !== b.distance) {
+            return a.distance - b.distance;
+        }
+        
+        // Priority 4: Similarity (higher is better)
+        return b.similarity - a.similarity;
     });
 
     // Return top 5 matches

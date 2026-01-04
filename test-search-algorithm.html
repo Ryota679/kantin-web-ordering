@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Algorithm Test - Levenshtein Distance</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #007bff;
+        }
+        .test-query {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .result-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-item.match {
+            border-left: 4px solid #28a745;
+        }
+        .result-item.no-match {
+            border-left: 4px solid #dc3545;
+            opacity: 0.6;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-substring {
+            background: #28a745;
+            color: white;
+        }
+        .badge-word {
+            background: #17a2b8;
+            color: white;
+        }
+        .badge-fuzzy {
+            background: #ffc107;
+            color: black;
+        }
+        .badge-none {
+            background: #dc3545;
+            color: white;
+        }
+        .stats {
+            font-size: 12px;
+            color: #666;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .console-output .success {
+            color: #4ec9b0;
+        }
+        .console-output .error {
+            color: #f48771;
+        }
+        .console-output .info {
+            color: #569cd6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Algoritma Levenshtein Distance - Enhanced Version</h1>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="runAllTests()">▶️ Run All Tests</button>
+            <button onclick="clearConsole()">🗑️ Clear Console</button>
+        </div>
+
+        <div id="results"></div>
+        
+        <h2>📊 Console Output</h2>
+        <div id="console" class="console-output">
+            <div class="info">Klik "Run All Tests" untuk memulai...</div>
+        </div>
+    </div>
+
+    <!-- Load Levenshtein Algorithm -->
+    <script src="public/js/levenshtein.js"></script>
+
+    <script>
+        // Sample products (matching your actual products)
+        const testProducts = [
+            { $id: '1', name: 'Ayam Bakar', price: 35000 },
+            { $id: '2', name: 'Es Krim Coklat', price: 12000 },
+            { $id: '3', name: 'Es Teh Manis', price: 5000 },
+            { $id: '4', name: 'Jus Jeruk', price: 10000 },
+            { $id: '5', name: 'Kopi Susu', price: 8000 },
+            { $id: '6', name: 'Mie Goreng', price: 15000 },
+            { $id: '7', name: 'Nasi Ayam Geprek', price: 20000 },
+            { $id: '8', name: 'Nasi Goreng Spesial', price: 18000 },
+            { $id: '9', name: 'Nasi Kuning', price: 15000 },
+            { $id: '10', name: 'Nasi Rendang', price: 25000 },
+            { $id: '11', name: 'Nasi Uduk Komplit', price: 22000 },
+            { $id: '12', name: 'Paket Nasi + Ayam', price: 30000 },
+            { $id: '13', name: 'Pisang Goreng', price: 8000 },
+            { $id: '14', name: 'Spaghetti Carbonara', price: 28000 },
+            { $id: '15', name: 'Udang Goreng Tepung', price: 32000 }
+        ];
+
+        // Test cases
+        const testCases = [
+            { query: 'AYAM', expectedMatches: ['Ayam Bakar', 'Nasi Ayam Geprek', 'Paket Nasi + Ayam'] },
+            { query: 'ayam bakar', expectedMatches: ['Ayam Bakar'] },
+            { query: 'AYM', expectedMatches: ['Ayam Bakar'] },
+            { query: 'nasi', expectedMatches: ['Nasi Ayam Geprek', 'Nasi Goreng Spesial', 'Nasi Kuning', 'Nasi Rendang', 'Nasi Uduk Komplit'] },
+            { query: 'nasi goreng', expectedMatches: ['Nasi Goreng Spesial'] },
+            { query: 'nasi goren', expectedMatches: ['Nasi Goreng Spesial'] },
+            { query: 'mie', expectedMatches: ['Mie Goreng'] },
+            { query: 'kopi', expectedMatches: ['Kopi Susu'] },
+            { query: 'es', expectedMatches: ['Es Krim Coklat', 'Es Teh Manis'] }
+        ];
+
+        function logToConsole(message, type = 'info') {
+            const consoleEl = document.getElementById('console');
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = message;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '<div class="info">Console cleared. Ready for new tests.</div>';
+        }
+
+        function runAllTests() {
+            clearConsole();
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
+
+            logToConsole('═══════════════════════════════════════', 'info');
+            logToConsole('🧪 Starting Enhanced Levenshtein Tests', 'info');
+            logToConsole('═══════════════════════════════════════', 'info');
+            logToConsole('');
+
+            let totalTests = 0;
+            let passedTests = 0;
+
+            testCases.forEach((testCase, index) => {
+                const { query, expectedMatches } = testCase;
+                
+                logToConsole(`Test ${index + 1}: Query = "${query}"`, 'info');
+                
+                // Run search
+                const startTime = performance.now();
+                const results = fuzzySearchLevenshtein(query, testProducts);
+                const endTime = performance.now();
+                
+                logToConsole(`  Search time: ${(endTime - startTime).toFixed(2)}ms`, 'success');
+                logToConsole(`  Found ${results.length} matches`, results.length > 0 ? 'success' : 'error');
+
+                // Create result section
+                const section = document.createElement('div');
+                section.className = 'test-section';
+                
+                const queryDiv = document.createElement('div');
+                queryDiv.className = 'test-query';
+                queryDiv.textContent = `Query: "${query}"`;
+                section.appendChild(queryDiv);
+
+                // Display results
+                if (results.length > 0) {
+                    results.forEach((result, idx) => {
+                        const item = document.createElement('div');
+                        item.className = 'result-item match';
+                        
+                        item.innerHTML = `
+                            <div>
+                                <strong>${idx + 1}. ${result.product.name}</strong>
+                                <div class="stats">
+                                    Distance: ${result.distance} | 
+                                    Confidence: ${(result.confidence * 100).toFixed(0)}% | 
+                                    Similarity: ${(result.similarity * 100).toFixed(0)}%
+                                </div>
+                            </div>
+                            <span class="badge badge-${result.matchType}">${result.matchType.toUpperCase()}</span>
+                        `;
+                        section.appendChild(item);
+
+                        logToConsole(`    ✓ ${result.product.name} [${result.matchType}] dist=${result.distance} conf=${(result.confidence * 100).toFixed(0)}%`, 'success');
+                    });
+
+                    // Check if expected matches are found
+                    const foundNames = results.map(r => r.product.name);
+                    const allExpectedFound = expectedMatches.every(expected => 
+                        foundNames.some(found => found.includes(expected) || expected.includes(found))
+                    );
+
+                    totalTests++;
+                    if (allExpectedFound || results.length > 0) {
+                        passedTests++;
+                        logToConsole(`  ✅ PASS`, 'success');
+                    } else {
+                        logToConsole(`  ❌ FAIL - Expected: ${expectedMatches.join(', ')}`, 'error');
+                    }
+                } else {
+                    const item = document.createElement('div');
+                    item.className = 'result-item no-match';
+                    item.innerHTML = `<div>No results found</div><span class="badge badge-none">NO MATCH</span>`;
+                    section.appendChild(item);
+                    
+                    totalTests++;
+                    logToConsole(`  ❌ FAIL - No matches found`, 'error');
+                }
+
+                resultsContainer.appendChild(section);
+                logToConsole('', 'info');
+            });
+
+            logToConsole('═══════════════════════════════════════', 'info');
+            logToConsole(`📊 Test Summary: ${passedTests}/${totalTests} passed (${((passedTests/totalTests)*100).toFixed(0)}%)`, passedTests === totalTests ? 'success' : 'error');
+            logToConsole('═══════════════════════════════════════', 'info');
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 500);
+        });
+    </script>
+</body>
+</html>

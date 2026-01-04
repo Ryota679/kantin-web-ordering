@@ -333,14 +333,26 @@ function performSearch(query) {
         console.log(`Search time: ${(endTime - startTime).toFixed(2)}ms`);
         console.log(`Found ${results.length} matches`);
         if (results.length > 0) {
-            console.log('Top matches:', results.map(r => `${r.product.name} (dist: ${r.distance})`));
+            console.log('Top matches:');
+            results.forEach((r, idx) => {
+                console.log(`  ${idx + 1}. "${r.product.name}" | Type: ${r.matchType} | Distance: ${r.distance} | Confidence: ${(r.confidence * 100).toFixed(0)}%`);
+            });
         } else {
             console.log('DEBUG: No matches found. Checking first 3 products...');
             allProducts.slice(0, 3).forEach(p => {
                 const norm = p.name.toLowerCase().trim();
+                const words = norm.split(/\s+/);
                 const dist = levenshteinDistance(query.toLowerCase(), norm);
-                const thresh = Math.floor(norm.length * 0.40);
-                console.log(`  "${p.name}" (norm: "${norm}"): distance=${dist}, threshold=${thresh}, match=${dist <= thresh}`);
+                const queryThresh = Math.floor(query.length * 0.40);
+
+                console.log(`  "${p.name}" (normalized: "${norm}")`);
+                console.log(`    Full string: distance=${dist}, queryThreshold=${queryThresh}, match=${dist <= queryThresh}`);
+
+                // Check word-level matching
+                words.forEach((word, idx) => {
+                    const wordDist = levenshteinDistance(query.toLowerCase(), word);
+                    console.log(`    Word[${idx}] "${word}": distance=${wordDist}, match=${wordDist <= queryThresh}`);
+                });
             });
         }
     }
